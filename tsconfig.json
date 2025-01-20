@@ -1,0 +1,15 @@
+{
+    "include": ["scripts/src/"],
+    "exclude": ["scripts/src/lib/"],
+    "compilerOptions": {
+      "allowJs": true,
+      "checkJs": true,
+      "module": "ES2022",
+      "target": "ES2022",
+      "moduleResolution": "node",
+      "esModuleInterop": true,
+      "strictNullChecks": true,
+      "rootDir": "scripts/src",
+      "outDir": "scripts/dest"
+    }
+}
