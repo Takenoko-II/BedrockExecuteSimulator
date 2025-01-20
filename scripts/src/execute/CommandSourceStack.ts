@@ -136,6 +136,7 @@ export class CommandSourceStack {
             this.position.y = value.position.y;
             this.position.z = value.position.z;
             this.positionDataType = value.dataType;
+            this.eyeHeight = value.eyeHeight;
         }
         else if (TripleAxisRotationBuilder.isValidVector2(value)) {
             const builder = TripleAxisRotationBuilder.from(value);

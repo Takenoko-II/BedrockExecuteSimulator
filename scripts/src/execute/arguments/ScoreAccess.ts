@@ -83,7 +83,14 @@ export class ScoreAccess {
 
     public static readScoreHolder(input: string): ScoreHolder {
         try {
-            return EntitySelectorReader.readSelector(input);
+            const selector = EntitySelectorReader.readSelector(input);
+
+            if (selector.isSingle) {
+                return selector;
+            }
+            else {
+                throw new Error("セレクターが満たすスコアホルダーは常に1つのみである必要があります");
+            }
         }
         catch (e) {
             if (e instanceof SelectorParseError) {

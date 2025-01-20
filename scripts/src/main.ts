@@ -1,18 +1,29 @@
-import { world } from "@minecraft/server";
+import { ScoreboardObjective, world } from "@minecraft/server";
 import { Execute } from "./execute/Execute";
-import { Vector3Builder } from "./util/Vector";
+import { MinecraftItemTypes } from "./lib/@minecraft/vanilla-data/lib/index";
+
+const objective = world.scoreboard.getObjective("a") as ScoreboardObjective;
 
 world.afterEvents.itemUse.subscribe(event => {
-    const execute = new Execute();
+    if (event.itemStack.type.id !== MinecraftItemTypes.Stick) return;
 
-    let i = 0;
+    new Execute()
+        .at("@p")
+        .as("@e[scores={a=0},type=armor_stand]")
+        .at("@e[scores={a=0},type=armor_stand]")
+        .run(stack => {
+            objective.addScore(stack.getExecutor(), 1);
+        });
 
-    execute.positioned.$("0 0 0").as("@e[type=armor_stand,scores={a=1,bee=2,cpp=!5..25}]").at("@s").run(css => {
-        i++;
-        css.getExecutor().applyImpulse(Vector3Builder.up());
-        css.getDimension().spawnParticle("minecraft:basic_flame_particle", css.getPosition());
-        console.log(css.getExecutor().nameTag, i);
-    });
+    world.sendMessage("\n".repeat(10));
+
+    new Execute()
+        .at("@p")
+        .as("@e[scores={a=1..}]")
+        .run(stack => {
+            const executor = stack.getExecutor();
+            world.sendMessage(`[${executor.nameTag}] score 'a' = ${objective.getScore(executor)}`);
+        });
 });
 
 /** TODO
@@ -20,6 +31,6 @@ world.afterEvents.itemUse.subscribe(event => {
  * haspermission=
  * hasitem=
  * どうせまだあるであろうパーサーのバグ修正(BlockReaderとか)
- * build()をrun()と統合してGeneratorにする
+ * execute()をGeneratorかそれに似た仕様にしたい
  * 同一座標のCSSの古い順ソート
  */

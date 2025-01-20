@@ -427,8 +427,6 @@ const immutableConfiguration: ImmutableConfiguration = {
                     try {
                         const record = MapReader.readStringMap(input);
 
-                        console.log(JSON.stringify(record));
-
                         if (entityQueryOptions.scoreOptions === undefined) {
                             entityQueryOptions.scoreOptions = Object.keys(record)
                             .map(key => {
@@ -458,7 +456,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                 }
             }
         }
-        // scores, haspermission, hasitem
+        // haspermission, hasitem
     ],
     SORT_ORDERS: {
         "NEAREST": (a, b, pos) => {
@@ -658,7 +656,7 @@ export class EntitySelectorReader {
 
     private index(): EntitySelector {
         const selectorType = this.type();
-        const entityQueryOptionsWithC = this.arguments();
+        const entityQueryOptionsWithC = this.arguments() ?? {};
 
         if (!this.isOver()) {
             throw new SelectorParseError("");
@@ -681,7 +679,7 @@ export class EntitySelectorReader {
                 ? "RANDOM"
                 : /*((entityQueryOptionsWithC?.c ?? selectorType.defaultEntityLimit ?? (2 ** 31 - 1)) < 0) ? "FARTHEST" : */"NEAREST";
 
-        const limit: number = Math.abs(entityQueryOptionsWithC?.c ?? selectorType.defaultEntityLimit ?? (2 ** 31 - 1));
+        const limit: number = Math.abs(entityQueryOptionsWithC.c ?? selectorType.defaultEntityLimit ?? (2 ** 31 - 1));
 
         if (entityQueryOptionsWithC !== undefined && entityQueryOptionsWithC.type === undefined && entityQueryOptionsWithC.excludeTypes === undefined) {
             entityQueryOptionsWithC.type = selectorType.defaultTypeSpecific;
@@ -691,13 +689,13 @@ export class EntitySelectorReader {
             ? false
             : entityQueryOptionsWithC.c < 0;
 
-        const isSingle: boolean = selectorType.defaultEntityLimit === 1 || entityQueryOptionsWithC?.c === 1 || entityQueryOptionsWithC?.c === -1;
+        const isSingle: boolean = selectorType.defaultEntityLimit === 1 || entityQueryOptionsWithC.c === 1 || entityQueryOptionsWithC.c === -1;
 
         return {
             isSingle,
 
             getEntities(stack) {
-                const options: EntityQueryOptions | undefined = entityQueryOptionsWithC === undefined ? undefined : {
+                const options: EntityQueryOptions | undefined = {
                     ...entityQueryOptionsWithC,
                     location: entityQueryOptionsWithC.posResolver === undefined
                         ? stack.getPosition()

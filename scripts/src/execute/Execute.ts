@@ -4,10 +4,9 @@ import { VectorReader } from "./arguments/VectorResolver";
 import { EntitySelectorReader } from "./arguments/EntitySelectorReader";
 import { AnchorType } from "./arguments/EntityAnchor";
 import { AxesReader } from "./arguments/AxesReader";
-import { DimensionTypes, Entity } from "@minecraft/server";
+import { DimensionTypes } from "@minecraft/server";
 import { ScoreAccess, ScoreComparator } from "./arguments/ScoreAccess";
 import { BlockReader } from "./arguments/BlockReader";
-import { Serializer } from "../util/Serializable";
 
 interface IPositioned {
     readonly $: (position: string) => Execute;
@@ -194,47 +193,35 @@ export class Execute {
         }
     };
 
-    private toCommandSourceStacks(stack: CommandSourceStack): CommandSourceStack[] {
-        const queue: CommandSourceStack[] = [];
-
-        for (const subCommand of this.subCommands) {
-            const forks = subCommand.through(stack);
-
-            if (forks.length === 0) {
-                continue;
-            }
-            else if (forks.length === 1) {
-                queue.push(forks[0]);
-            }
-            else {
-                for (const fork of forks) {
-                    queue.push(...this.toCommandSourceStacks(fork));
-                }
-            }
-        }
-
-        return queue;
-    }
-
-    private build(stack: CommandSourceStack, index: number): CommandSourceStack[] {
+    private execute(stack: CommandSourceStack, index: number, callbackFn: (stack: CommandSourceStack) => void, isEnd: boolean): boolean {
         if (index > this.subCommands.length - 1) {
-            return [stack];
+            return true;
         }
 
-        const result: CommandSourceStack[] = [];
         const subCommand: SubCommand = this.subCommands[index];
         const forks: CommandSourceStack[] = subCommand.through(stack);
 
         for (const fork of forks) {
-            result.push(...this.build(fork, index + 1));
+            const f = this.execute(fork, index + 1, callbackFn, false);
+            if (f) callbackFn(fork);
         }
 
-        return result;
+        return false;
     }
 
-    public run(callbackFn: (stack: CommandSourceStack) => void): void {
-        const stacks = this.build(this.root, 0);
-        stacks.forEach(stack => callbackFn(stack));
+    public run(callbackFn: (stack: CommandSourceStack) => void): void;
+
+    public run(command: string): void;
+
+    public run(value: ((stack: CommandSourceStack) => void) | string): void {
+        if (typeof value === "string") {
+            this.run(stack => {
+                stack.getDimension().runCommand(value);
+            });
+        }
+        else {
+            this.execute(this.root, 0, value, false);
+        }
     }
 }
 
