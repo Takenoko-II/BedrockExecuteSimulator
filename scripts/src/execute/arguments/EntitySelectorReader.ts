@@ -1,9 +1,8 @@
-import { Dimension, DimensionTypes, Entity, EntityQueryOptions, EntityQueryScoreOptions, GameMode, Vector3, world } from "@minecraft/server";
+import { Dimension, DimensionTypes, Entity, EntityQueryOptions, GameMode, InputPermissionCategory, Player, PlayerInputPermissions, Vector3, world } from "@minecraft/server";
 import { CommandSourceStack } from "../CommandSourceStack";
 import { MinecraftEntityTypes } from "../../lib/@minecraft/vanilla-data/lib/index";
 import { Vector3Builder } from "../../util/Vector";
-import { PositionVectorResolver } from "./VectorResolver";
-import { Serializer } from "../../util/Serializable";
+import { PositionVectorResolver, VectorComponent, VectorParseError, VectorReader } from "./VectorResolver";
 import { MapParseError, MapReader } from "./MapReader";
 import { NumberRange } from "../../util/NumberRange";
 
@@ -24,7 +23,19 @@ export type SelectorSortOrder = "NEAREST" | "FARTHEST" | "RANDOM";
 interface EntityQueryOptionsWithC extends EntityQueryOptions {
     c?: number;
 
-    posResolver?: PositionVectorResolver;
+    x?: VectorComponent;
+
+    y?: VectorComponent;
+
+    z?: VectorComponent;
+
+    dx?: number;
+
+    dy?: number;
+
+    dz?: number;
+
+    inputPermissionFilters?: { readonly category: InputPermissionCategory; readonly enabled: boolean }[];
 }
 
 interface SelectorType {
@@ -418,6 +429,129 @@ const immutableConfiguration: ImmutableConfiguration = {
             }
         },
         {
+            name: "dx",
+            resolver: (input, not, entityQueryOptions) => {
+                if (not) {
+                    throw new SelectorParseError("not ha dame----");
+                }
+                else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
+                    if (entityQueryOptions.dx === undefined) {
+                        entityQueryOptions.dx = Number.parseFloat(input);
+                    }
+                    else {
+                        throw new SelectorParseError("");
+                    }
+                }
+                else {
+                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                }
+            }
+        },
+        {
+            name: "dy",
+            resolver: (input, not, entityQueryOptions) => {
+                if (not) {
+                    throw new SelectorParseError("not ha dame----");
+                }
+                else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
+                    if (entityQueryOptions.dy === undefined) {
+                        entityQueryOptions.dy = Number.parseFloat(input);
+                    }
+                    else {
+                        throw new SelectorParseError("");
+                    }
+                }
+                else {
+                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                }
+            }
+        },
+        {
+            name: "dz",
+            resolver: (input, not, entityQueryOptions) => {
+                if (not) {
+                    throw new SelectorParseError("not ha dame----");
+                }
+                else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
+                    if (entityQueryOptions.dz === undefined) {
+                        entityQueryOptions.dz = Number.parseFloat(input);
+                    }
+                    else {
+                        throw new SelectorParseError("");
+                    }
+                }
+                else {
+                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                }
+            }
+        },
+        {
+            name: "x",
+            resolver: (input, not, entityQueryOptions) => {
+                if (not) {
+                    throw new SelectorParseError("not ha dame----");
+                }
+                else {
+                    try {
+                        const component = VectorReader.absOrRelComponent(input);
+                        entityQueryOptions.x = component;
+                    }
+                    catch (e) {
+                        if (e instanceof VectorParseError) {
+                            throw new SelectorParseError(e.message + "," + e.stack);
+                        }
+                        else {
+                            throw e;
+                        }
+                    }
+                }
+            }
+        },
+        {
+            name: "y",
+            resolver: (input, not, entityQueryOptions) => {
+                if (not) {
+                    throw new SelectorParseError("not ha dame----");
+                }
+                else {
+                    try {
+                        const component = VectorReader.absOrRelComponent(input);
+                        entityQueryOptions.y = component;
+                    }
+                    catch (e) {
+                        if (e instanceof VectorParseError) {
+                            throw new SelectorParseError(e.message + "," + e.stack);
+                        }
+                        else {
+                            throw e;
+                        }
+                    }
+                }
+            }
+        },
+        {
+            name: "z",
+            resolver: (input, not, entityQueryOptions) => {
+                if (not) {
+                    throw new SelectorParseError("not ha dame----");
+                }
+                else {
+                    try {
+                        const component = VectorReader.absOrRelComponent(input);
+                        entityQueryOptions.z = component;
+                    }
+                    catch (e) {
+                        if (e instanceof VectorParseError) {
+                            throw new SelectorParseError(e.message + "," + e.stack);
+                        }
+                        else {
+                            throw e;
+                        }
+                    }
+                }
+            }
+        },
+        {
             name: "scores",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
@@ -430,7 +564,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         if (entityQueryOptions.scoreOptions === undefined) {
                             entityQueryOptions.scoreOptions = Object.keys(record)
                             .map(key => {
-                                const{ not, value } = record[key];
+                                const { not, value } = record[key];
                                 const range = NumberRange.parse(value, true, true);
 
                                 return {
@@ -455,8 +589,83 @@ const immutableConfiguration: ImmutableConfiguration = {
                     }
                 }
             }
+        },
+        {
+            name: "haspermission",
+            resolver: (input, not, entityQueryOptions) => {
+                if (not) {
+                    throw new SelectorParseError("not ha dame----");
+                }
+                else {
+                    try {
+                        const record = MapReader.readStringMap(input);
+
+                        if (entityQueryOptions.inputPermissionFilters === undefined) {
+                            entityQueryOptions.inputPermissionFilters = Object.keys(record)
+                            .map(key => {
+                                const { not, value } = record[key];
+
+                                if (not) {
+                                    throw new SelectorParseError("haspermission=のキーは否定不可能です");
+                                }
+
+                                const category = (() => {
+                                    switch (key) {
+                                        case "camera":
+                                            return InputPermissionCategory.Camera;
+                                        case "movement":
+                                            return InputPermissionCategory.Movement;
+                                        case "lateral_movement":
+                                            return InputPermissionCategory.LateralMovement;
+                                        case "sneak":
+                                            return InputPermissionCategory.Sneak;
+                                        case "jump":
+                                            return InputPermissionCategory.Jump;
+                                        case "mount":
+                                            return InputPermissionCategory.Mount;
+                                        case "dismount":
+                                            return InputPermissionCategory.Dismount;
+                                        case "move_forwrad":
+                                            return InputPermissionCategory.MoveForward;
+                                        case "move_backward":
+                                            return InputPermissionCategory.MoveBackward;
+                                        case "move_left":
+                                            return InputPermissionCategory.MoveLeft;
+                                        case "move_right":
+                                            return InputPermissionCategory.MoveRight;
+                                        default:
+                                            throw new SelectorParseError("無効な入力権限IDです");
+                                    }
+                                })();
+
+                                const enabled = (() => {
+                                    if (value === "enabled") return true;
+                                    else if (value === "disabled") return false;
+                                    else throw new SelectorParseError("入力権限のキーにはenabledまたはdisabledが有効な値です");
+                                })();
+
+                                return {
+                                    category,
+                                    enabled
+                                };
+                            });
+                        }
+                        else {
+                            throw new SelectorParseError("");
+                        }
+                    }
+                    catch (e) {
+                        if (e instanceof MapParseError) {
+                            throw new SelectorParseError(e.message + "," + e.stack);
+                        }
+                        else {
+                            throw e;
+                        }
+                    }
+                }
+            }
         }
-        // haspermission, hasitem
+        // hasitem
     ],
     SORT_ORDERS: {
         "NEAREST": (a, b, pos) => {
@@ -624,11 +833,13 @@ export class EntitySelectorReader {
                 return undefined;
             }
             else {
-                throw new SelectorParseError("a");
+                throw new SelectorParseError("セレクター引数の括弧が閉じられていません");
             }
         }
 
         while (!this.isOver()) {
+            let found: boolean = false;
+
             for (const { name, resolver } of immutableConfiguration.SELECTOR_ARGUMENT_TYPES) {
                 if (this.test(name, immutableConfiguration.EQUAL)) {
                     this.next(name);
@@ -636,8 +847,13 @@ export class EntitySelectorReader {
                     const not: boolean = this.next(immutableConfiguration.NOT);
                     const value: string = this.argumentValue();
                     resolver(value, not, entityQueryOptions);
+                    found = true;
                     break;
                 }
+            }
+
+            if (!found) {
+                throw new SelectorParseError("有効なセレクター引数名が見つかりませんでした");
             }
 
             if (this.next(immutableConfiguration.SELECTOR_ARGUMENT_BRACES[1])) {
@@ -647,7 +863,7 @@ export class EntitySelectorReader {
                 continue;
             }
             else {
-                throw new SelectorParseError(", or ]");
+                throw new SelectorParseError("セレクター引数の終端にはカンマか閉じ括弧が必要です");
             }
         }
 
@@ -659,7 +875,7 @@ export class EntitySelectorReader {
         const entityQueryOptionsWithC = this.arguments() ?? {};
 
         if (!this.isOver()) {
-            throw new SelectorParseError("");
+            throw new SelectorParseError("セレクター引数の解析終了後に無効な文字列を検出しました");
         }
 
         if (selectorType.name === "@s") {
@@ -681,9 +897,47 @@ export class EntitySelectorReader {
 
         const limit: number = Math.abs(entityQueryOptionsWithC.c ?? selectorType.defaultEntityLimit ?? (2 ** 31 - 1));
 
-        if (entityQueryOptionsWithC !== undefined && entityQueryOptionsWithC.type === undefined && entityQueryOptionsWithC.excludeTypes === undefined) {
+        if (entityQueryOptionsWithC.type === undefined && entityQueryOptionsWithC.excludeTypes === undefined) {
             entityQueryOptionsWithC.type = selectorType.defaultTypeSpecific;
         }
+
+        if (!(entityQueryOptionsWithC.dx === undefined && entityQueryOptionsWithC.dy === undefined && entityQueryOptionsWithC.dz === undefined)) {
+            const { dx, dy, dz } = entityQueryOptionsWithC;
+
+            const volume: Vector3 = {
+                x: (dx === undefined ||dx === 0)
+                    ? 1.0
+                    : dx + (dx / dx),
+                y: (dy === undefined ||dy === 0)
+                    ? 1.0
+                    : dy + (dy / dy),
+                z: (dz === undefined ||dz === 0)
+                    ? 1.0
+                    : dz + (dz / dz)
+            };
+
+            entityQueryOptionsWithC.volume = volume;
+        }
+
+        const inputPermissions: ((player: Player) => boolean)[] | undefined = entityQueryOptionsWithC.inputPermissionFilters === undefined
+            ? undefined
+            : entityQueryOptionsWithC.inputPermissionFilters.map(({ category, enabled }) => {
+                return (player) => {
+                    const isEnabled = player.inputPermissions.isPermissionCategoryEnabled(category);
+                    if (enabled) return isEnabled;
+                    else return !isEnabled;
+                };
+            });
+
+        const { x: px, y: py, z: pz } = entityQueryOptionsWithC;
+        const defaultComponent: VectorComponent = {
+            type: "relative",
+            value: 0
+        };
+
+        const posVecResolver: PositionVectorResolver | undefined = px === undefined && py === undefined && pz === undefined
+            ? undefined
+            : new PositionVectorResolver(px ?? defaultComponent, py ?? defaultComponent, pz ?? defaultComponent);
 
         const isArrayReversed: boolean = entityQueryOptionsWithC?.c === undefined
             ? false
@@ -697,12 +951,22 @@ export class EntitySelectorReader {
             getEntities(stack) {
                 const options: EntityQueryOptions | undefined = {
                     ...entityQueryOptionsWithC,
-                    location: entityQueryOptionsWithC.posResolver === undefined
+                    location: posVecResolver === undefined
                         ? stack.getPosition()
-                        : entityQueryOptionsWithC.posResolver.resolve(stack)
+                        : posVecResolver.resolve(stack)
                 };
 
                 let candidates: Entity[] = DimensionTypes.getAll()
+                .filter(({ typeId }) => {
+                    if (options.minDistance === undefined && options.maxDistance === undefined && options.volume === undefined) {
+                        // ディメンションの制約がないとき
+                        return true;
+                    }
+                    else {
+                        // ディメンションの制約があるとき
+                        return stack.getDimension().id === typeId;
+                    }
+                })
                 .flatMap(({ typeId }) => {
                     const dimension: Dimension = world.getDimension(typeId);
 
@@ -716,7 +980,10 @@ export class EntitySelectorReader {
 
                 if (options !== undefined) {
                     candidates = candidates.filter(entity => {
-                        return entity.matches(options);
+                        if (entity instanceof Player && inputPermissions !== undefined) {
+                            return entity.matches(options) && inputPermissions.every(func => func(entity));
+                        }
+                        else return entity.matches(options);
                     });
                 }
 

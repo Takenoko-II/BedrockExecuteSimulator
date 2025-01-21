@@ -3,7 +3,7 @@ import { TripleAxisRotationBuilder, Vector3Builder } from "../../util/Vector";
 
 type VectorComponentType = "absolute" | "relative" | "local";
 
-interface VectorComponent {
+export interface VectorComponent {
     readonly type: VectorComponentType;
 
     readonly value: number;
@@ -99,7 +99,7 @@ export class RotationVectorResolver {
     }
 }
 
-class VectorParseError extends Error {
+export class VectorParseError extends Error {
     public constructor(message: string) {
         super(message);
     }
