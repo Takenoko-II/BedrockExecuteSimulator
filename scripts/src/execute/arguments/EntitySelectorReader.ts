@@ -1,4 +1,4 @@
-import { Dimension, DimensionTypes, Entity, EntityQueryOptions, GameMode, InputPermissionCategory, Player, PlayerInputPermissions, Vector3, world } from "@minecraft/server";
+import { Dimension, DimensionTypes, Entity, EntityQueryOptions, GameMode, InputPermissionCategory, Player, Vector3, world } from "@minecraft/server";
 import { CommandSourceStack } from "../CommandSourceStack";
 import { MinecraftEntityTypes } from "../../lib/@minecraft/vanilla-data/lib/index";
 import { Vector3Builder } from "../../util/Vector";
@@ -18,6 +18,7 @@ export class SelectorParseError extends Error {
     }
 }
 
+// "FARTHEST" は廃止予定
 export type SelectorSortOrder = "NEAREST" | "FARTHEST" | "RANDOM";
 
 interface EntityQueryOptionsWithC extends EntityQueryOptions {
@@ -904,7 +905,7 @@ export class EntitySelectorReader {
         if (!(entityQueryOptionsWithC.dx === undefined && entityQueryOptionsWithC.dy === undefined && entityQueryOptionsWithC.dz === undefined)) {
             const { dx, dy, dz } = entityQueryOptionsWithC;
 
-            const volume: Vector3 = {
+            const volume: Vector3 = /*{
                 x: (dx === undefined ||dx === 0)
                     ? 1.0
                     : dx + (dx / dx),
@@ -914,7 +915,7 @@ export class EntitySelectorReader {
                 z: (dz === undefined ||dz === 0)
                     ? 1.0
                     : dz + (dz / dz)
-            };
+            };*/ { x: dx ?? 0, y: dy ?? 0, z: dz ?? 0 }; // おのれもやん
 
             entityQueryOptionsWithC.volume = volume;
         }

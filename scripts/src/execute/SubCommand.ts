@@ -4,7 +4,7 @@ import { Axis } from "./arguments/AxesReader";
 import { EntitySelector } from "./arguments/EntitySelectorReader";
 import { Vector3Builder } from "../util/Vector";
 import { CommandSender } from "./CommandSender";
-import { BlockFilter, BlockVolume, DimensionType, DimensionTypes, UnloadedChunksError } from "@minecraft/server";
+import { BlockFilter, BlockVolume, DimensionType, DimensionTypes, UnloadedChunksError, Vector3 } from "@minecraft/server";
 import { AnchorType, EntityAnchor } from "./arguments/EntityAnchor";
 import { BlockInfo } from "./arguments/BlockReader";
 import { MinecraftBlockTypes } from "../lib/@minecraft/vanilla-data/lib/index";
@@ -333,12 +333,18 @@ export class IfBlocks extends GuardableSubCommand {
         const end = this.endPosResolver.resolve(stack);
         const destination = this.destPosResolver.resolve(stack);
         const dimension = stack.getDimension();
-        const blockFilter: BlockFilter = this.scanMode === "masked" ? { excludeTypes: [MinecraftBlockTypes.Air] } : {};
+        /*const blockFilter: BlockFilter = this.scanMode === "masked"
+            ? { excludeTypes: [MinecraftBlockTypes.Air] }
+            : {};*/
 
         try {
-            const iterator = dimension.getBlocks(new BlockVolume(start, end), blockFilter).getBlockLocationIterator();
+            /*const iterator = dimension.getBlocks(new BlockVolume(start, end), blockFilter).getBlockLocationIterator();
 
-            for (const location of iterator) {
+            let iResult = iterator.next();
+            while (!iResult.done) {
+                const location = iResult.value;
+                iResult = iterator.next();
+
                 const delta = Vector3Builder.from(location).subtract(start);
                 const dest = destination.clone().add(delta);
 
@@ -351,6 +357,35 @@ export class IfBlocks extends GuardableSubCommand {
 
                 if (block.permutation !== destBlock.permutation) {
                     return false;
+                }
+            }
+
+            return true;*/
+
+            for (let x = start.x; x <= end.x; x++) {
+                for (let y = start.y; y <= end.y; y++) {
+                    for (let z = start.z; z <= end.z; z++) {
+                        const location: Vector3 = { x, y, z };
+
+                        const delta = Vector3Builder.from(location).subtract(start);
+                        const dest = destination.clone().add(delta);
+
+                        const block = dimension.getBlock(location);
+
+                        const destBlock = dimension.getBlock(dest);
+
+                        if (block === undefined || destBlock === undefined) {
+                            return false;
+                        }
+
+                        if (this.scanMode === "masked" && block.permutation.type.id === MinecraftBlockTypes.Air) {
+                            continue;
+                        }
+
+                        if (block.permutation !== destBlock.permutation) {
+                            return false;
+                        }
+                    }
                 }
             }
 

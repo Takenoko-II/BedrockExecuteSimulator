@@ -114,12 +114,15 @@ export class VectorReader {
 
     private static readonly DECIMAL_POINT: string = '.';
 
-    private static readonly NUMBER_PARSER: (input: string, blockCenterCorrection: boolean) => number = (input, blockCenterCorrection) => {
+    private static readonly NUMBER_PARSER: (input: string, type: VectorComponentType, blockCenterCorrection: boolean) => number = (input, type, blockCenterCorrection) => {
         if (/^[+-]?\d+$/g.test(input) && blockCenterCorrection) {
             return Number.parseInt(input) + 0.5;
         }
         else if (/^[+-]?(?:\d+(?:\.\d+)?)$/g.test(input)) {
             return Number.parseFloat(input);
+        }
+        else if (type !== "absolute" && input === '') {
+            return 0;
         }
         else {
             throw new VectorParseError("数値の解析に失敗しました: '" + input + "'");
@@ -238,7 +241,7 @@ export class VectorReader {
         throw new VectorParseError("");
     }
 
-    private value(blockCenterCorrection: boolean = false): number {
+    private value(type: VectorComponentType, blockCenterCorrection: boolean = false): number {
         let string: string = "";
 
         let dotAlreadyAppeared: boolean = false;
@@ -265,12 +268,12 @@ export class VectorReader {
             }
         }
 
-        return VectorReader.NUMBER_PARSER(string, blockCenterCorrection);
+        return VectorReader.NUMBER_PARSER(string, type, blockCenterCorrection);
     }
 
     private component(blockCenterCorrection: boolean = false): VectorComponent {
         const type: VectorComponentType = this.type();
-        const value: number = this.value(blockCenterCorrection && type === "absolute");
+        const value: number = this.value(type, blockCenterCorrection && type === "absolute");
 
         return {
             type,

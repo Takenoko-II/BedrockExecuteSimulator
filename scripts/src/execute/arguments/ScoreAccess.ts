@@ -82,32 +82,32 @@ export class ScoreAccess {
     }
 
     public static readScoreHolder(input: string): ScoreHolder {
-        try {
-            const selector = EntitySelectorReader.readSelector(input);
-
-            if (selector.isSingle) {
-                return selector;
-            }
-            else {
-                throw new Error("セレクターが満たすスコアホルダーは常に1つのみである必要があります");
-            }
+        if (world.getPlayers({ name: input }).length > 0) {
+            return {
+                isSingle: true,
+                getEntities(stack) {
+                    return world.getPlayers({ name: input });
+                }
+            };
         }
-        catch (e) {
-            if (e instanceof SelectorParseError) {
-                if (world.getPlayers({ name: input }).length > 0) {
-                    return {
-                        getEntities(stack) {
-                            return world.getPlayers({ name: input });
-                        },
-                        isSingle: true
-                    }
+        else {
+            try {
+                const selector = EntitySelectorReader.readSelector(input);
+    
+                if (selector.isSingle) {
+                    return selector;
                 }
                 else {
-                    return input;
+                    throw new Error("セレクターが満たすスコアホルダーは常に1つのみである必要があります");
                 }
             }
-            else {
-                throw e;
+            catch (e) {
+                if (e instanceof SelectorParseError) {
+                    return input;
+                }
+                else {
+                    throw e;
+                }
             }
         }
     }

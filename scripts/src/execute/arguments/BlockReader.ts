@@ -23,9 +23,9 @@ export class BlockReader {
 
     private static readonly QUOTE: string = '"';
 
-    private static readonly ID_PATTERN: RegExp = /^(?:[a-zA-Z_](?:[a-zA-Z0-9_]+)?:)?[a-zA-Z_](?:[a-zA-Z0-9_]+)?$/g;
+    private static readonly ID_PATTERN: () => RegExp = () => /^(?:[a-zA-Z_](?:[a-zA-Z0-9_]+)?:)?[a-zA-Z_](?:[a-zA-Z0-9_]+)?$/g;
 
-    private static readonly INT_PATTERN: RegExp = /^[+-]?\\d+$/g;
+    private static readonly INT_PATTERN: () => RegExp = () => /^[+-]?\d+$/g;
 
     private static readonly SIGNS: [string, string] = ['+', '-'];
 
@@ -120,25 +120,25 @@ export class BlockReader {
                 break;
             }
             else if (/^[^a-zA-Z0-9_:]$/g.test(current)) {
-                throw new BlockParseError("");
+                throw new BlockParseError("ブロックIDに含むことのできない文字です: '" + current + "'");
             }
             else {
                 string += current;
             }
         }
 
-        if (BlockReader.ID_PATTERN.test(string)) {
+        if (BlockReader.ID_PATTERN().test(string)) {
             const type = BlockTypes.get(string);
 
             if (type === undefined) {
-                throw new BlockParseError("");
+                throw new BlockParseError("不明なブロックIDです: '" + string + "'");
             }
             else {
                 return type;
             }
         }
         else {
-            throw new BlockParseError("");
+            throw new BlockParseError("ブロックIDとして無効な文字列です: '" + string + "'");
         }
     }
 
@@ -146,7 +146,7 @@ export class BlockReader {
         let string: string = "";
 
         if (!this.next(BlockReader.QUOTE)) {
-            throw new BlockParseError("");
+            throw new BlockParseError("ブロックステートでは文字列は'\"'で開始される必要があります");
         }
 
 
@@ -163,7 +163,7 @@ export class BlockReader {
         }
 
         if (!this.next(BlockReader.QUOTE)) {
-            throw new BlockParseError("");
+            throw new BlockParseError("ブロックステートでは文字列は'\"'で終了される必要があります");
         }
 
         return string;
@@ -191,11 +191,11 @@ export class BlockReader {
             }
         }
 
-        if (BlockReader.INT_PATTERN.test(string)) {
+        if (BlockReader.INT_PATTERN().test(string)) {
             return Number.parseInt(string);
         }
         else {
-            throw new BlockParseError("");
+            throw new BlockParseError("整数として無効な文字列です: '" + string + "'");
         }
     }
 
@@ -207,7 +207,7 @@ export class BlockReader {
             return true;
         }
         else {
-            throw new BlockParseError("");
+            throw new BlockParseError("真偽値が見つかりませんでした");
         }
     }
 
@@ -222,7 +222,7 @@ export class BlockReader {
             return this.boolean();
         }
         else {
-            throw new BlockParseError("");
+            throw new BlockParseError("ブロックステートに渡される値は文字列、整数、真偽値のいずれかである必要があります");
         }
     }
 
@@ -230,14 +230,14 @@ export class BlockReader {
         const record: Record<string, string | number | boolean> = {};
 
         if (!this.next(BlockReader.STATE_BRACES[0])) {
-            throw new BlockParseError("");
+            throw new BlockParseError("ブロックステートは'['で開始される必要があります");
         }
 
         while (!this.isOver()) {
             const key = this.string();
 
             if (!this.next(BlockReader.EQUAL)) {
-                throw new BlockParseError("");
+                throw new BlockParseError("イコールが見つかりませんでした");
             }
 
             const value = this.value();
@@ -245,10 +245,10 @@ export class BlockReader {
             const blockStateType = BlockStates.get(key);
 
             if (blockStateType === undefined) {
-                throw new BlockParseError("");
+                throw new BlockParseError("不明なブロックステートです: '" + key + "'");
             }
             else if (!blockStateType.validValues.includes(value)) {
-                throw new BlockParseError("");
+                throw new BlockParseError("ブロックステート '" + key + "' には無効な値です: '" + value + "'");
             }
 
             record[key] = value;
@@ -257,12 +257,12 @@ export class BlockReader {
                 break;
             }
             else if (!this.next(BlockReader.COMMA)) {
-                throw new BlockParseError("");
+                throw new BlockParseError("ブロックステートの区切りにはカンマが必要です");
             }
         }
 
         if (!this.next(BlockReader.STATE_BRACES[1])) {
-            throw new BlockParseError("");
+            throw new BlockParseError("ブロックステートは']'で終了される必要があります");
         }
 
         return record;
@@ -278,7 +278,7 @@ export class BlockReader {
         const states = this.states();
 
         if (!this.isOver()) {
-            throw new BlockParseError("");
+            throw new BlockParseError("ブロックステートの解析後に無効な文字列を検出しました: '" + this.text.slice(this.location) + "'");
         }
 
         return { type, states };

@@ -1,7 +1,8 @@
-import { Dimension, DimensionType, DimensionTypes, Entity, Vector2, Vector3, world } from "@minecraft/server";
+import { CommandResult, Dimension, DimensionType, DimensionTypes, Entity, Vector2, Vector3, world } from "@minecraft/server";
 import { TripleAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { CommandSender, Origin } from "./CommandSender";
 import { AnchorType, EntityAnchor } from "./arguments/EntityAnchor";
+import { RandomHandler, Xorshift32 } from "../util/Random";
 
 export type PositionDataType = "EntityUUID" | "Vector3";
 
@@ -75,7 +76,7 @@ export class CommandSourceStack {
     }
 
     public hasExecutor(): boolean {
-        return this.executor !== null;
+        return this.executor !== undefined;
     }
 
     public getPosition(): Vector3Builder {
@@ -150,5 +151,13 @@ export class CommandSourceStack {
             this.entityAnchor.setType(value);
             this.positionDataType = "Vector3";
         }
+    }
+
+    public runCommand(command: string): CommandResult {
+        const commandString: string = `execute in ${this.dimension.id.replace("minecraft:", "")} positioned ${this.position.format("$x $y $z", 4)} rotated ${this.rotation.format("$yaw $pitch", 4)} run ${command}`;
+
+        return this.hasExecutor()
+            ? this.getExecutor().runCommand(commandString)
+            : this.getDimension().runCommand(commandString);
     }
 }

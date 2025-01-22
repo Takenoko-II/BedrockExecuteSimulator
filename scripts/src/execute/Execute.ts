@@ -216,7 +216,7 @@ export class Execute {
     public run(value: ((stack: CommandSourceStack) => void) | string): void {
         if (typeof value === "string") {
             this.run(stack => {
-                stack.getDimension().runCommand(value);
+                stack.runCommand(value);
             });
         }
         else {
@@ -224,23 +224,3 @@ export class Execute {
         }
     }
 }
-
-// execute as @a at @s run playsound random.click @s ~ ~ ~
-
-// 1. サブコマンド毎に区切る
-// "as @a", "at @s", "run playsound random.click @s ~ ~ ~"
-
-// 2. 一つ目のサブコマンドを実行
-// @a -> [Steve, Alex]
-// -> Steve
-// as Steve at Steve run playsound Steve
-// CSS は 道を通っていくやつ
-// SubCommand は CSS と 道 をつくるやつ
-
-// 思ったより動的なのかもしれない。
-// selectorを解析するのはノード解析(next())中。
-
-// EntityQueryOptionsは暫定、c=の表現やxyz=,dxyz=の表現に乏しい
-// EntityQueryOptionsに変換するクラス作ればいいか
-// 既存のは変えなくていいや
-// やっぱ@aと@eの違いとかあるし変える方針で
