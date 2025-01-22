@@ -64,7 +64,7 @@ export class PositionVectorResolver {
             return v;
         }
         else {
-            throw new TypeError("INVALID SPECIFICATION");
+            throw new TypeError("チルダ表記法とキャレット表記法を混在させることはできません");
         }
     }
 }
@@ -238,7 +238,7 @@ export class VectorReader {
             }
         }
 
-        throw new VectorParseError("");
+        throw new VectorParseError("無効な座標成分表記法です");
     }
 
     private value(type: VectorComponentType, blockCenterCorrection: boolean = false): number {
@@ -288,7 +288,7 @@ export class VectorReader {
 
         if (x.type === "local" || y.type === "local" || z.type === "local") {
             if (!(x.type === "local" && y.type === "local" && z.type === "local")) {
-                throw new VectorParseError("");
+                throw new VectorParseError("キャレット表記法と他の表記法を混在させることはできません");
             }
         }
 
@@ -300,7 +300,7 @@ export class VectorReader {
         const pitch = this.component();
 
         if (yaw.type === "local" || pitch.type === "local") {
-            throw new VectorParseError("");
+            throw new VectorParseError("回転の入力ではキャレット表記法は使用できません");
         }
 
         return new RotationVectorResolver(yaw, pitch);
@@ -311,7 +311,7 @@ export class VectorReader {
         ins.text = input;
         const pos = ins.position();
 
-        if (!ins.isOver()) throw new VectorParseError("");
+        if (!ins.isOver()) throw new VectorParseError("座標の解析終了後に無効な文字列を検知しました");
 
         return pos;
     }
@@ -321,7 +321,7 @@ export class VectorReader {
         ins.text = input;
         const rot = ins.rotation();
 
-        if (!ins.isOver()) throw new VectorParseError("");
+        if (!ins.isOver()) throw new VectorParseError("回転の解析終了後に無効な文字列を検知しました");
 
         return rot;
     }
@@ -331,8 +331,8 @@ export class VectorReader {
         ins.text = input;
         const c = ins.component();
 
-        if (c.type === "local") throw new VectorParseError("");
-        if (!ins.isOver()) throw new VectorParseError("");
+        if (c.type === "local") throw new VectorParseError("この関数ではキャレット表記法の入力は無効です");
+        if (!ins.isOver()) throw new VectorParseError("成分の解析終了後に無効な文字列を検知しました");
 
         return c;
     }

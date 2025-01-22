@@ -93,7 +93,7 @@ export class MapReader {
 
     private object(): Record<string, { readonly not: boolean; readonly value: string; }> {
         if (!this.next(MapReader.MAP_BRACES[0])) {
-            throw new MapParseError("not '{'");
+            throw new MapParseError("Mapの先頭は中括弧が期待されています");
         }
 
         const record: Record<string, { readonly not: boolean; readonly value: string; }> = {};
@@ -109,7 +109,7 @@ export class MapReader {
                 const key: string = this.key();
                 
                 if (!this.next(MapReader.EQUAL)) {
-                    throw new MapParseError("not '='");
+                    throw new MapParseError("Mapのキーと値はイコールで区切られる必要があります");
                 }
 
                 const [not, value] = this.value();
@@ -121,7 +121,7 @@ export class MapReader {
         }
 
         if (!this.next(MapReader.MAP_BRACES[1])) {
-            throw new MapParseError("not '}'");
+            throw new MapParseError("中括弧が閉じられていません");
         }
 
         return record;
@@ -141,7 +141,7 @@ export class MapReader {
                 break;
             }
             else {
-                throw new MapParseError("");
+                throw new MapParseError("Mapのキーに使用できない文字です: '" + currentChar + "'");
             }
         }
 
@@ -168,7 +168,7 @@ export class MapReader {
                 break;
             }
             else {
-                throw new MapParseError("");
+                throw new MapParseError("Mapの値に使用できない文字です: '" + currentChar + "'");
             }
         }
 
@@ -177,7 +177,7 @@ export class MapReader {
 
     private index(): Record<string, { readonly not: boolean; readonly value: string; }> {
         const r = this.object();
-        if (!this.isOver()) throw new MapParseError("");
+        if (!this.isOver()) throw new MapParseError("Mapの解析終了後に無効な文字列を検知しました");
         return r;
     }
 

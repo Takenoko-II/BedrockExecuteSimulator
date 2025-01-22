@@ -11,17 +11,17 @@ export class AxesReader {
 
     public static readAxes(input: string): Set<Axis> {
         if (input.length > 3) {
-            throw new AxesParseError("");
+            throw new AxesParseError("軸指定文字列の長さは3を超えることができません");
         }
         else {
             const chars = input.split('');
             const set = new Set(chars);
 
             if (chars.length !== set.size) {
-                throw new AxesParseError("");
+                throw new AxesParseError("文字を重複させることはできません");
             }
             else if (chars.every(c => "xyz".includes(c))) {
-                throw new AxesParseError("");
+                throw new AxesParseError("x, y, z以外は軸として無効な文字です");
             }
             else {
                 return set as Set<Axis>;

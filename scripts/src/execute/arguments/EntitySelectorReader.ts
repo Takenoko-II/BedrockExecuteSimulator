@@ -153,7 +153,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         entityQueryOptions.type = input;
                     }
                     else {
-                        throw new SelectorParseError("duplicate");
+                        throw new SelectorParseError("セレクター引数type=は重複させることができません");
                     }
                 }
             }
@@ -174,7 +174,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         entityQueryOptions.name = input;
                     }
                     else {
-                        throw new SelectorParseError("duplicate");
+                        throw new SelectorParseError("セレクター引数name=は重複させることができません");
                     }
                 }
             }
@@ -225,14 +225,14 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "r",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数r=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.maxDistance === undefined) {
                         entityQueryOptions.minDistance = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("");
+                        throw new SelectorParseError("セレクター引数r=は重複させることができません");
                     }
                 }
                 else {
@@ -244,14 +244,14 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "rm",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数rm=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.minDistance === undefined) {
                         entityQueryOptions.minDistance = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("");
+                        throw new SelectorParseError("セレクター引数rm=は重複させることができません");
                     }
                 }
                 else {
@@ -263,14 +263,14 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "rx",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数rx=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.maxVerticalRotation === undefined) {
                         entityQueryOptions.maxVerticalRotation = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("");
+                        throw new SelectorParseError("セレクター引数rx=は重複させることができません");
                     }
                 }
                 else {
@@ -282,14 +282,14 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "rxm",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数rxm=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.minVerticalRotation === undefined) {
                         entityQueryOptions.minVerticalRotation = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("");
+                        throw new SelectorParseError("セレクター引数rxm=は重複させることができません");
                     }
                 }
                 else {
@@ -301,10 +301,15 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "ry",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数ry=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
-                    entityQueryOptions.maxHorizontalRotation = Number.parseFloat(input);
+                    if (entityQueryOptions.maxHorizontalRotation === undefined) {
+                        entityQueryOptions.maxHorizontalRotation = Number.parseFloat(input);
+                    }
+                    else {
+                        throw new SelectorParseError("セレクター引数ry=は重複させることができません");
+                    }
                 }
                 else {
                     throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
@@ -315,14 +320,14 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "rym",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数rym=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.minHorizontalRotation === undefined) {
                         entityQueryOptions.minHorizontalRotation = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("");
+                        throw new SelectorParseError("セレクター引数rym=は重複させることができません");
                     }
                 }
                 else {
@@ -334,14 +339,14 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "l",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数l=は否定することができません");
                 }
                 else if (immutableConfiguration.INT_PATTERN().test(input)) {
                     if (entityQueryOptions.maxLevel === undefined) {
                         entityQueryOptions.maxLevel = Number.parseInt(input);
                     }
                     else {
-                        throw new SelectorParseError("");
+                        throw new SelectorParseError("セレクター引数l=は重複させることができません");
                     }
                 }
                 else {
@@ -353,14 +358,14 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "lm",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数lm=は否定することができません");
                 }
                 else if (immutableConfiguration.INT_PATTERN().test(input)) {
                     if (entityQueryOptions.minLevel === undefined) {
                         entityQueryOptions.minLevel = Number.parseInt(input);
                     }
                     else {
-                        throw new SelectorParseError("");
+                        throw new SelectorParseError("セレクター引数lm=は重複させることができません");
                     }
                 }
                 else {
@@ -388,7 +393,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         case GameMode.spectator:
                             return GameMode.spectator;
                         default:
-                            throw new SelectorParseError("");
+                            throw new SelectorParseError("セレクター引数m=には無効な値です: '" + input + "'");
                     }
                 })();
 
@@ -397,7 +402,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         entityQueryOptions.excludeGameModes = [gameMode];
                     }
                     else {
-                        throw new MojangBugError("セレクター引数「m」は否定であったとしても重複させることはできません");
+                        throw new MojangBugError("セレクター引数m=は否定であったとしても重複させることができません");
                     }
                 }
                 else {
@@ -405,7 +410,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         entityQueryOptions.gameMode = gameMode;
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数「m」は肯定の条件で重複させることができません");
+                        throw new SelectorParseError("セレクター引数m=は重複させることができません");
                     }
                 }
             }
@@ -414,14 +419,14 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "c",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数c=は否定することができません");
                 }
                 else if (immutableConfiguration.INT_PATTERN().test(input)) {
                     if (entityQueryOptions.c === undefined) {
                         entityQueryOptions.c = Number.parseInt(input);
                     }
                     else {
-                        throw new SelectorParseError("");
+                        throw new SelectorParseError("セレクター引数c=は重複させることができません");
                     }
                 }
                 else {
@@ -433,14 +438,14 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "dx",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数dx=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.dx === undefined) {
                         entityQueryOptions.dx = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("");
+                        throw new SelectorParseError("セレクター引数dx=は重複させることができません");
                     }
                 }
                 else {
@@ -452,14 +457,14 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "dy",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数dy=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.dy === undefined) {
                         entityQueryOptions.dy = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("");
+                        throw new SelectorParseError("セレクター引数dy=は重複させることができません");
                     }
                 }
                 else {
@@ -471,14 +476,14 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "dz",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数dz=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.dz === undefined) {
                         entityQueryOptions.dz = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("");
+                        throw new SelectorParseError("セレクター引数dz=は重複させることができません");
                     }
                 }
                 else {
@@ -490,12 +495,17 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "x",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数x=は否定することができません");
                 }
                 else {
                     try {
-                        const component = VectorReader.absOrRelComponent(input);
-                        entityQueryOptions.x = component;
+                        if (entityQueryOptions.x === undefined) {
+                            const component = VectorReader.absOrRelComponent(input);
+                            entityQueryOptions.x = component;
+                        }
+                        else {
+                            throw new SelectorParseError("セレクター引数x=は重複させることができません");
+                        }
                     }
                     catch (e) {
                         if (e instanceof VectorParseError) {
@@ -512,12 +522,17 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "y",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数y=は否定することができません");
                 }
                 else {
                     try {
-                        const component = VectorReader.absOrRelComponent(input);
-                        entityQueryOptions.y = component;
+                        if (entityQueryOptions.y === undefined) {
+                            const component = VectorReader.absOrRelComponent(input);
+                            entityQueryOptions.y = component;
+                        }
+                        else {
+                            throw new SelectorParseError("セレクター引数y=は重複させることができません");
+                        }
                     }
                     catch (e) {
                         if (e instanceof VectorParseError) {
@@ -534,12 +549,17 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "z",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数z=は否定することができません");
                 }
                 else {
                     try {
-                        const component = VectorReader.absOrRelComponent(input);
-                        entityQueryOptions.z = component;
+                        if (entityQueryOptions.z === undefined) {
+                            const component = VectorReader.absOrRelComponent(input);
+                            entityQueryOptions.z = component;
+                        }
+                        else {
+                            throw new SelectorParseError("セレクター引数z=は重複させることができません");
+                        }
                     }
                     catch (e) {
                         if (e instanceof VectorParseError) {
@@ -556,7 +576,7 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "scores",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数scores=は否定することができません");
                 }
                 else {
                     try {
@@ -577,7 +597,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                             });
                         }
                         else {
-                            throw new SelectorParseError("");
+                            throw new SelectorParseError("セレクター引数scores=は重複させることができません");
                         }
                     }
                     catch (e) {
@@ -595,7 +615,7 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "haspermission",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("not ha dame----");
+                    throw new SelectorParseError("セレクター引数haspermission=は否定することができません");
                 }
                 else {
                     try {
@@ -652,7 +672,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                             });
                         }
                         else {
-                            throw new SelectorParseError("");
+                            throw new SelectorParseError("セレクター引数haspermission=は重複させることができません");
                         }
                     }
                     catch (e) {
@@ -762,7 +782,7 @@ export class EntitySelectorReader {
         let value: string = "";
 
         if (this.isOver()) {
-            throw new SelectorParseError("");
+            throw new SelectorParseError("セレクター引数の値の読み取り中に文字列の終了を検知しました");
         }
 
         let previousChar: string = this.next(true);
@@ -785,7 +805,7 @@ export class EntitySelectorReader {
                 insideQuote = !insideQuote;
 
                 if (!(this.next(immutableConfiguration.COMMA) || this.test(immutableConfiguration.SELECTOR_ARGUMENT_BRACES[1]))) {
-                    throw new SelectorParseError("Comma is expected");
+                    throw new SelectorParseError("セレクター引数の区切りにはカンマが期待されています");
                 }
 
                 break;
@@ -810,7 +830,7 @@ export class EntitySelectorReader {
         }
 
         if (insideQuote) {
-            throw new SelectorParseError("Quote must be closed");
+            throw new SelectorParseError("クオーテーションが閉じられていません");
         }
 
         return value;
