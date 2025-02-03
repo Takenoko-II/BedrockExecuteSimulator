@@ -4,7 +4,7 @@ import { Axis } from "./arguments/AxesReader";
 import { EntitySelector } from "./arguments/EntitySelectorReader";
 import { Vector3Builder } from "../util/Vector";
 import { CommandSender } from "./CommandSender";
-import { BlockFilter, BlockVolume, DimensionType, DimensionTypes, UnloadedChunksError, Vector3 } from "@minecraft/server";
+import { DimensionType, DimensionTypes, UnloadedChunksError, Vector3 } from "@minecraft/server";
 import { AnchorType, EntityAnchor } from "./arguments/EntityAnchor";
 import { BlockInfo } from "./arguments/BlockReader";
 import { MinecraftBlockTypes } from "../lib/@minecraft/vanilla-data/lib/index";
@@ -13,7 +13,7 @@ import { ScoreAccess, ScoreComparator } from "./arguments/ScoreAccess";
 export type ScanMode = "all" | "masked";
 
 export abstract class SubCommand {
-    public through(stack: CommandSourceStack): CommandSourceStack[] {
+    public apply(stack: CommandSourceStack): CommandSourceStack[] {
         if (this instanceof RedirectableSubCommand) {
             return [this.redirect(stack)];
         }

@@ -1,6 +1,6 @@
 import { CommandSourceStack } from "./CommandSourceStack";
 import { Align, Anchored, As, At, Facing, FacingEntity, IfBlock, IfBlocks, IfEntity, IfScoreCompare, IfScoreMatches, In, Positioned, PositionedAs, Rotated, RotatedAs, ScanMode, SubCommand, UnlessBlock, UnlessBlocks, UnlessEntity, UnlessScoreCompare, UnlessScoreMatches } from "./SubCommand";
-import { VectorReader } from "./arguments/VectorResolver";
+import { PositionVectorResolver, VectorReader } from "./arguments/VectorResolver";
 import { EntitySelectorReader } from "./arguments/EntitySelectorReader";
 import { AnchorType } from "./arguments/EntityAnchor";
 import { AxesReader } from "./arguments/AxesReader";
@@ -193,17 +193,17 @@ export class Execute {
         }
     };
 
-    private execute(stack: CommandSourceStack, index: number, callbackFn: (stack: CommandSourceStack) => void, isEnd: boolean): boolean {
+    private execute(callbackFn: (stack: CommandSourceStack) => void, stack: CommandSourceStack, index: number): boolean {
         if (index > this.subCommands.length - 1) {
             return true;
         }
 
         const subCommand: SubCommand = this.subCommands[index];
-        const forks: CommandSourceStack[] = subCommand.through(stack);
+        const forks: CommandSourceStack[] = subCommand.apply(stack);
 
         for (const fork of forks) {
-            const f = this.execute(fork, index + 1, callbackFn, false);
-            if (f) callbackFn(fork);
+            const isEndOfFirstFork: boolean = this.execute(callbackFn, fork, index + 1);
+            if (isEndOfFirstFork) callbackFn(fork);
         }
 
         return false;
@@ -215,12 +215,67 @@ export class Execute {
 
     public run(value: ((stack: CommandSourceStack) => void) | string): void {
         if (typeof value === "string") {
-            this.run(stack => {
-                stack.runCommand(value);
-            });
+            this.execute(stack => stack.runCommand(value), this.root, 0);
         }
         else {
-            this.execute(this.root, 0, value, false);
+            this.execute(value, this.root, 0);
+        }
+    }
+
+    public build(): $ {
+        return new $(this.root, this.subCommands);
+    }
+}
+
+class $ {
+    private readonly stacks: CommandSourceStack[];
+
+    private forkIndex: number = 0;
+
+    private subCommandIndex: number = 0;
+
+    public constructor(root: CommandSourceStack, private readonly subCommands: SubCommand[]) {
+        this.stacks = [root];
+    }
+
+    private isForkEnded(): boolean {
+        return this.forkIndex >= this.stacks.length - 1;
+    }
+
+    private getCurrentSubCommand(): SubCommand {
+        return this.subCommands[this.subCommandIndex];
+    }
+
+    private nextSubCommand(): void {
+        this.subCommandIndex++;
+    }
+
+    private isSubCommandEnded(): boolean {
+        return this.subCommandIndex >= this.subCommands.length - 1;
+    }
+
+    private getCurrentFork(): CommandSourceStack {
+        return this.stacks[this.forkIndex];
+    }
+
+    public next(): void {
+        if (this.isForkEnded()) {
+            this.nextSubCommand();
+
+            if (this.isSubCommandEnded()) {
+                console.log("end");
+            }
+            else {
+                this.forkIndex = 0;
+                this.next();
+            }
+        }
+        else {
+            const subCommand = this.getCurrentSubCommand();
+
+            this.stacks.splice(this.forkIndex, 0, ...subCommand.apply(this.getCurrentFork()));
+
+            this.forkIndex++;
         }
     }
 }

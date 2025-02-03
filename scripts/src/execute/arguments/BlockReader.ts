@@ -233,6 +233,10 @@ export class BlockReader {
             throw new BlockParseError("ブロックステートは'['で開始される必要があります");
         }
 
+        if (this.next(BlockReader.STATE_BRACES[1])) {
+            return record;
+        }
+
         while (!this.isOver()) {
             const key = this.string();
 

@@ -2,7 +2,6 @@ import { CommandResult, Dimension, DimensionType, DimensionTypes, Entity, Vector
 import { TripleAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { CommandSender, Origin } from "./CommandSender";
 import { AnchorType, EntityAnchor } from "./arguments/EntityAnchor";
-import { RandomHandler, Xorshift32 } from "../util/Random";
 
 export type PositionDataType = "EntityUUID" | "Vector3";
 
@@ -103,7 +102,11 @@ export class CommandSourceStack {
         return this.entityAnchor;
     }
 
-    public clone(modifier: (newStack: CommandSourceStack) => void): CommandSourceStack {
+    public clone(): CommandSourceStack;
+
+    public clone(modifier: (newStack: CommandSourceStack) => void): CommandSourceStack;
+
+    public clone(modifier?: (newStack: CommandSourceStack) => void): CommandSourceStack {
         const stack = new CommandSourceStack();
         stack.executor = this.executor;
         stack.entityAnchor.setType(this.entityAnchor.getType());
@@ -114,7 +117,11 @@ export class CommandSourceStack {
         });
         stack.write(this.rotation);
         stack.write(DimensionTypes.get(this.dimension.id) as DimensionType);
-        modifier(stack);
+
+        if (modifier !== undefined) {
+            modifier(stack);
+        }
+
         return stack;
     }
 

@@ -858,6 +858,9 @@ export class EntitySelectorReader {
             }
         }
 
+        let insideAnotherBrace: boolean = false;
+        let insideQuote: boolean = false;
+
         while (!this.isOver()) {
             let found: boolean = false;
 
@@ -877,10 +880,21 @@ export class EntitySelectorReader {
                 throw new SelectorParseError("有効なセレクター引数名が見つかりませんでした");
             }
 
-            if (this.next(immutableConfiguration.SELECTOR_ARGUMENT_BRACES[1])) {
-                break;
+            if ( this.next(immutableConfiguration.QUOTE)) {
+                insideQuote = !insideQuote;
             }
-            else if (this.next(immutableConfiguration.COMMA)) {
+            if (!insideQuote && !insideAnotherBrace && this.next(immutableConfiguration.SELECTOR_ARGUMENT_BRACES[0])) {
+                insideAnotherBrace = true;
+            }
+            if (!insideQuote && this.next(immutableConfiguration.SELECTOR_ARGUMENT_BRACES[1])) {
+                if (insideAnotherBrace) {
+                    insideAnotherBrace = false;
+                }
+                else {
+                    break;
+                }
+            }
+            else if (!insideQuote && this.next(immutableConfiguration.COMMA)) {
                 continue;
             }
             else {
@@ -1036,3 +1050,5 @@ export interface EntitySelector {
 
     getEntities(stack: CommandSourceStack): Entity[];
 }
+
+EntitySelectorReader.readSelector("@a[hasitem=[]]")
