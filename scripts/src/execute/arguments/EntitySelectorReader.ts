@@ -1050,5 +1050,3 @@ export interface EntitySelector {
 
     getEntities(stack: CommandSourceStack): Entity[];
 }
-
-EntitySelectorReader.readSelector("@a[hasitem=[]]")

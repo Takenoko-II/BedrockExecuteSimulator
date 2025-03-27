@@ -1,13 +1,15 @@
 import { world } from "@minecraft/server";
 import { Execute } from "./execute/Execute";
-import { MinecraftItemTypes } from "./lib/@minecraft/vanilla-data/lib/index";
 
-world.afterEvents.itemUse.subscribe(event => {
-    if (event.itemStack.type.id !== MinecraftItemTypes.Stick) return;
+world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) => {
+    const execute: Execute = new Execute();
 
-    const execute = new Execute();
-
-    execute.as("@e").run("say a");
+    execute.as("@a").at("@s").anchored("eyes").align("xyz")
+        .if.score("@s", "obj").$("=", "@s", "obj2")
+        .positioned.$("^ ^ ^1")
+        .run(s => {
+            s.getPosition().getRotation2d().getLocalAxisProvider().left().getLocalAxisProvider()
+        })
 });
 
 /** TODO

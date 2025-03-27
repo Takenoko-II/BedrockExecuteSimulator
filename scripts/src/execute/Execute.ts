@@ -1,6 +1,6 @@
 import { CommandSourceStack } from "./CommandSourceStack";
 import { Align, Anchored, As, At, Facing, FacingEntity, IfBlock, IfBlocks, IfEntity, IfScoreCompare, IfScoreMatches, In, Positioned, PositionedAs, Rotated, RotatedAs, ScanMode, SubCommand, UnlessBlock, UnlessBlocks, UnlessEntity, UnlessScoreCompare, UnlessScoreMatches } from "./SubCommand";
-import { PositionVectorResolver, VectorReader } from "./arguments/VectorResolver";
+import { VectorReader } from "./arguments/VectorResolver";
 import { EntitySelectorReader } from "./arguments/EntitySelectorReader";
 import { AnchorType } from "./arguments/EntityAnchor";
 import { AxesReader } from "./arguments/AxesReader";
@@ -46,6 +46,10 @@ export class Execute {
     private readonly root: CommandSourceStack;
 
     private readonly subCommands: SubCommand[] = [];
+
+    public constructor();
+
+    public constructor(root: CommandSourceStack);
 
     public constructor(root: CommandSourceStack = new CommandSourceStack()) {
         this.root = root;
@@ -222,12 +226,18 @@ export class Execute {
         }
     }
 
-    public build(): $ {
-        return new $(this.root, this.subCommands);
+    public build(): ExecuteCommandForkRecord {
+        return new ExecuteCommandForkRecord(this.root, this.subCommands);
     }
 }
 
-class $ {
+export interface RecordForkResult {
+    getCommandSourceStack(): CommandSourceStack;
+
+    readonly done: boolean;
+}
+
+export class ExecuteCommandForkRecord {
     private readonly stacks: CommandSourceStack[];
 
     private forkIndex: number = 0;
@@ -239,7 +249,7 @@ class $ {
     }
 
     private isForkEnded(): boolean {
-        return this.forkIndex >= this.stacks.length - 1;
+        return this.forkIndex > this.stacks.length - 1;
     }
 
     private getCurrentSubCommand(): SubCommand {
@@ -251,31 +261,56 @@ class $ {
     }
 
     private isSubCommandEnded(): boolean {
-        return this.subCommandIndex >= this.subCommands.length - 1;
+        return this.subCommandIndex > this.subCommands.length - 1;
     }
 
     private getCurrentFork(): CommandSourceStack {
         return this.stacks[this.forkIndex];
     }
 
-    public next(): void {
+    private nextFork(): void {
+        this.forkIndex++;
+    }
+
+    public next(): RecordForkResult {
         if (this.isForkEnded()) {
             this.nextSubCommand();
 
             if (this.isSubCommandEnded()) {
-                console.log("end");
+                return {
+                    getCommandSourceStack() {
+                        throw new TypeError("プロパティ 'done' がfalseの場合のみこのメソッドを呼び出すことができます");
+                    },
+
+                    done: true
+                };
             }
             else {
-                this.forkIndex = 0;
-                this.next();
+                this.subCommandIndex = 0;
+                return this.next();
             }
         }
         else {
             const subCommand = this.getCurrentSubCommand();
+            const fork = this.getCurrentFork();
 
-            this.stacks.splice(this.forkIndex, 0, ...subCommand.apply(this.getCurrentFork()));
+            // いっこもどるをここに実装したい
 
-            this.forkIndex++;
+            this.stacks.splice(this.forkIndex, 1, ...subCommand.apply(fork));
+
+            this.nextFork();
+
+            console.log(this.forkIndex, this.subCommandIndex, this.stacks.length, this.subCommands.length);
+
+            return {
+                getCommandSourceStack() {
+                    return fork;
+                },
+
+                done: false
+            };
         }
     }
 }
+
+// うーんむずい。[as1, as2] -> [as1, at1(1), at1(2), as2, at2(1), at2(2)] にするとat1が２つ終わった後にas2がもう一回呼ばれちゃうから、splice(1)にして履歴保存はうーーーーーーん。。。。。。。。

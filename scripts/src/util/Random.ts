@@ -34,35 +34,26 @@ export class RandomHandler {
         return clone;
     }
 
-    public static choice<T>(value: T): T[keyof T] {
-        if (value === undefined || value === null) {
-            throw new TypeError("Unknown Type Value");
+    public static choice<T extends unknown>(value: T[]): T {
+        if (value.length === 0) {
+            throw new RangeError("要素数は1以上である必要があります");
         }
 
-        const keys = Object.keys(value);
-        const index = this.generate({ min: 0, max: keys.length - 1 });
-
-        if (keys.length === 0) {
-            throw new RangeError("キーの数は1以上である必要があります");
-        }
-
-        const key = keys[index];
-
-        return value[key];
+        return value[this.generate({ min: 0, max: value.length - 1 })];
     }
 
-    public static chance(chance = 0.5) {
+    public static chance(chance = 0.5): boolean {
         const number = Math.random() + chance;
         if (number >= 1) return true;
         else return false;
     }
 
-    public static sign() {
+    public static sign(): 1 | -1 {
         if (this.chance()) return 1;
         return -1;
     }
 
-    public static uuid() {
+    public static uuid(): string {
         const chars = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.split('');
 
         for (let i = 0; i < chars.length; i++) {
@@ -133,7 +124,7 @@ export class Xorshift32 {
         return this.w;
     }
 
-    uuid() {
+    public uuid(): string {
         const chars = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.split('');
 
         for (let i = 0; i < chars.length; i++) {
@@ -150,7 +141,7 @@ export class Xorshift32 {
         return chars.join('');
     }
 
-    shuffle<T>(list: T[]): T[] {
+    public shuffle<T>(list: T[]): T[] {
         const clone = [...list];
 
         if (list.length <= 1) return clone;

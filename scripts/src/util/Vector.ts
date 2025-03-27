@@ -1,7 +1,5 @@
 import { Vector2, Vector3, VectorXZ } from "@minecraft/server";
 
-import { Serializer } from "./Serializable";
-
 function isValidNumber(x: unknown): x is number {
     return typeof x === "number" && !Number.isNaN(x);
 }
