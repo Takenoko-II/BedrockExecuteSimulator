@@ -155,6 +155,9 @@ export class Serializer {
         if (Array.isArray(object) && !forceAsObject) {
             return this.array(object, indentation);
         }
+        else if (object === null) {
+            return this.null();
+        }
 
         let str: string = this.OBJECT_BRACE[0];
 
@@ -162,7 +165,7 @@ export class Serializer {
 
         for (let i = 0; i < keys.length; i++) {
             const key: string = keys[i];
-            const value: string = this.any(object[key], indentation + 1);
+            const value: string = this.any(Reflect.get(object, key), indentation + 1);
 
             str += this.linebreak()
                 + this.indentation(indentation)
@@ -223,7 +226,7 @@ export class Serializer {
         const obj: object = {};
         
         map.forEach((v, k) => {
-            obj[(typeof k === "string") ? k : this.any(k, indentation)] = v;
+            Reflect.set(obj, (typeof k === "string") ? k : this.any(k, indentation), v);
         });
 
         return "Map <"

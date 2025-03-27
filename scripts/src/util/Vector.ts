@@ -412,9 +412,9 @@ export class Vector3Builder implements Vector3 {
             return false;
         }
 
-        const x: unknown = value["x"];
-        const y: unknown = value["y"];
-        const z: unknown = value["z"];
+        const x: unknown = Reflect.get(value, "x");
+        const y: unknown = Reflect.get(value, "y");
+        const z: unknown = Reflect.get(value, "z");
 
         return isValidNumber(x)
             && isValidNumber(y)
@@ -426,8 +426,8 @@ export class Vector3Builder implements Vector3 {
             return false;
         }
 
-        const x: unknown = value["x"];
-        const z: unknown = value["z"];
+        const x: unknown = Reflect.get(value, "x");
+        const z: unknown = Reflect.get(value, "z");
 
         return isValidNumber(x)
             && isValidNumber(z);
@@ -714,8 +714,8 @@ export class TripleAxisRotationBuilder implements Vector2 {
             return false;
         }
 
-        const x: unknown = value["x"];
-        const y: unknown = value["y"];
+        const x: unknown = Reflect.get(value, "x");
+        const y: unknown = Reflect.get(value, "y");
 
         return isValidNumber(x)
             && isValidNumber(y);

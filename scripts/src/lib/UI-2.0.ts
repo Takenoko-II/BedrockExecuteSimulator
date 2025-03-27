@@ -810,6 +810,7 @@ export class ActionFormWrapper extends ServerFormWrapper implements ActionPushab
      */
     public constructor() {
         super();
+        this.elements = undefined as unknown as ActionFormElementDefinitions;
         Object.defineProperty(this, "elements", {
             get: (): ActionFormElementDefinitions => {
                 const that = this;
@@ -1021,6 +1022,7 @@ export class ModalFormWrapper extends ServerFormWrapper implements Submittable, 
      */
     public constructor() {
         super();
+        this.elements = undefined as unknown as ModalFormElementDefinitions;
         Object.defineProperty(this, "elements", {
             get: (): ModalFormElementDefinitions => {
                 const that = this;
@@ -1334,6 +1336,7 @@ export class MessageFormWrapper extends ServerFormWrapper implements MessagePush
      */
     public constructor() {
         super();
+        this.elements = undefined as unknown as MessageFormElementDefinitions;
         Object.defineProperty(this, "elements", {
             get: (): MessageFormElementDefinitions => {
                 const that = this;
