@@ -1,49 +1,49 @@
+import { Entity, Vector3 } from "@minecraft/server";
 import { Vector3Builder } from "../../util/Vector";
-import { CommandSourceStack } from "../CommandSourceStack";
 
 export type AnchorType = "eyes" | "feet";
 
 export class EntityAnchor {
-    private readonly stack: CommandSourceStack;
+    private source: Entity | Vector3;
 
     private type: AnchorType = "feet";
 
-    public constructor(stack: CommandSourceStack) {
-        this.stack = stack;
-    }
+    public constructor() {}
 
     public getType(): AnchorType {
         return this.type;
     }
 
-    public setType(type: AnchorType): void {
-        this.type = type;
-    }
-
-    public getOffsetBedrock(): Vector3Builder {
-        if (this.type === "eyes") {
-            if (this.stack.getPositionDataType() === "EntityUUID") {
-                return new Vector3Builder(0, this.stack.getEyeHeight(), 0);
-            }
-            else {
-                return Vector3Builder.zero();
-            }
+    private getEyeHeight(): number {
+        if (this.source instanceof Entity) {
+            if (this.source.isValid) return this.source.getHeadLocation().y - this.source.location.y;
+            else throw new Error();
         }
         else {
-            return Vector3Builder.zero();
+            return 0;
         }
     }
 
-    public getOffsetJava(): Vector3Builder {
-        if (this.type === "eyes") {
-            if (this.stack.hasExecutor()) {
-                const entity = this.stack.getExecutor();
-                return Vector3Builder.from(entity.getHeadLocation()).subtract(entity.location);
-            }
-            else return Vector3Builder.zero();
+    public getOffset(): Vector3Builder {
+        return new Vector3Builder(0, this.getEyeHeight(), 0);
+    }
+
+    public write(type: AnchorType): void;
+
+    public write(source: Entity | Vector3): void;
+
+    public write(entityAnchor: EntityAnchor): void;
+
+    public write(value: EntityAnchor | Entity | Vector3 | AnchorType): void {
+        if (value instanceof EntityAnchor) {
+            this.type = value.type;
+            this.source = value.source;
+        }
+        else if (value === "eyes" || value === "feet") {
+            this.type = value;
         }
         else {
-            return Vector3Builder.zero();
+            this.source = value;
         }
     }
 }

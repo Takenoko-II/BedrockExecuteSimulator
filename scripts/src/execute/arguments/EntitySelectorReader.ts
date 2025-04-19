@@ -4,7 +4,8 @@ import { MinecraftEntityTypes } from "../../lib/@minecraft/vanilla-data/lib/inde
 import { Vector3Builder } from "../../util/Vector";
 import { PositionVectorResolver, VectorComponent, VectorParseError, VectorReader } from "./VectorResolver";
 import { MapParseError, MapReader } from "./MapReader";
-import { NumberRange } from "../../util/NumberRange";
+import { IntRange } from "../../util/NumberRange";
+import { RegistryKey } from "../../util/Registry";
 
 export class MojangBugError extends Error {
     public constructor(message: string) {
@@ -586,7 +587,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                             entityQueryOptions.scoreOptions = Object.keys(record)
                             .map(key => {
                                 const { not, value } = record[key];
-                                const range = NumberRange.parse(value, true, true);
+                                const range = IntRange.parse(value, true);
 
                                 return {
                                     exclude: not,
@@ -905,6 +906,7 @@ export class EntitySelectorReader {
         return entityQueryOptions;
     }
 
+    // ごちゃごちゃしすぎだからRegistry使って作り直し
     private index(): EntitySelector {
         const selectorType = this.type();
         const entityQueryOptionsWithC = this.arguments() ?? {};
@@ -913,6 +915,7 @@ export class EntitySelectorReader {
             throw new SelectorParseError("セレクター引数の解析終了後に無効な文字列を検出しました");
         }
 
+        // @sだけ特別にね
         if (selectorType.name === "@s") {
             return {
                 isSingle: true,
@@ -926,16 +929,20 @@ export class EntitySelectorReader {
             };
         }
 
+        // farthest消そうよ
         const sortOrder: SelectorSortOrder = selectorType.defaultEntitySortOrder === "RANDOM"
                 ? "RANDOM"
                 : /*((entityQueryOptionsWithC?.c ?? selectorType.defaultEntityLimit ?? (2 ** 31 - 1)) < 0) ? "FARTHEST" : */"NEAREST";
 
+        // c=が指定されたらその値の絶対値, 指定がなければセレクタタイプのデフォルト値, セレクタタイプもデフォルト値を持ってなければint32_max
         const limit: number = Math.abs(entityQueryOptionsWithC.c ?? selectorType.defaultEntityLimit ?? (2 ** 31 - 1));
 
+        // type=とtype=!が未指定ならばセレクタタイプのデフォルトタイプ(要修正)
         if (entityQueryOptionsWithC.type === undefined && entityQueryOptionsWithC.excludeTypes === undefined) {
             entityQueryOptionsWithC.type = selectorType.defaultTypeSpecific;
         }
 
+        // dx, dy, dzのいずれかが指定されていればvolumeに書き込む
         if (!(entityQueryOptionsWithC.dx === undefined && entityQueryOptionsWithC.dy === undefined && entityQueryOptionsWithC.dz === undefined)) {
             const { dx, dy, dz } = entityQueryOptionsWithC;
 
@@ -954,6 +961,7 @@ export class EntitySelectorReader {
             entityQueryOptionsWithC.volume = volume;
         }
 
+        // inputPermissionが指定されていれば独自プロパティに関数書き込み
         const inputPermissions: ((player: Player) => boolean)[] | undefined = entityQueryOptionsWithC.inputPermissionFilters === undefined
             ? undefined
             : entityQueryOptionsWithC.inputPermissionFilters.map(({ category, enabled }) => {
@@ -964,34 +972,42 @@ export class EntitySelectorReader {
                 };
             });
 
+        // x=, y=, z=取り出し
         const { x: px, y: py, z: pz } = entityQueryOptionsWithC;
+
         const defaultComponent: VectorComponent = {
             type: "relative",
             value: 0
         };
 
+        // セレクタの探索基準座標をつくる
         const posVecResolver: PositionVectorResolver | undefined = px === undefined && py === undefined && pz === undefined
             ? undefined
             : new PositionVectorResolver(px ?? defaultComponent, py ?? defaultComponent, pz ?? defaultComponent);
 
+        // c=が指定済みかつ負ならば配列はリバースされる
         const isArrayReversed: boolean = entityQueryOptionsWithC?.c === undefined
             ? false
             : entityQueryOptionsWithC.c < 0;
 
+        // c=1またはc=-1またはセレクタのデフォルトリミットが1ならばisSingle=true
         const isSingle: boolean = selectorType.defaultEntityLimit === 1 || entityQueryOptionsWithC.c === 1 || entityQueryOptionsWithC.c === -1;
 
         return {
             isSingle,
 
             getEntities(stack) {
-                const options: EntityQueryOptions | undefined = {
+                // 探索基準座標適用したEntityQueryOptionsつくる
+                const options: EntityQueryOptions = {
                     ...entityQueryOptionsWithC,
                     location: posVecResolver === undefined
                         ? stack.getPosition()
                         : posVecResolver.resolve(stack)
                 };
 
+                // 全ディメンション取得
                 let candidates: Entity[] = DimensionTypes.getAll()
+                // r=とか指定されてたらディメンションを1つに制限
                 .filter(({ typeId }) => {
                     if (options.minDistance === undefined && options.maxDistance === undefined && options.volume === undefined) {
                         // ディメンションの制約がないとき
@@ -1002,37 +1018,45 @@ export class EntitySelectorReader {
                         return stack.getDimension().id === typeId;
                     }
                 })
+                // エンティティの配列にする
                 .flatMap(({ typeId }) => {
                     const dimension: Dimension = world.getDimension(typeId);
 
                     if (selectorType.isDeadEntityDetectable) {
+                        // セレクタが死んでるのも取れるならプレイヤー以外とプレイヤーは分けて取得
                         return dimension.getEntities({ excludeTypes: [MinecraftEntityTypes.Player] }).concat(dimension.getPlayers());
                     }
                     else {
+                        // そうでなければ普通に取る
                         return dimension.getEntities();
                     }
                 });
 
-                if (options !== undefined) {
-                    candidates = candidates.filter(entity => {
-                        if (entity instanceof Player && inputPermissions !== undefined) {
-                            return entity.matches(options) && inputPermissions.every(func => func(entity));
-                        }
-                        else return entity.matches(options);
-                    });
-                }
+                candidates = candidates.filter(entity => {
+                    // inputpermission=があるプレイヤー限定でinputPermission条件付きで探索
+                    if (entity instanceof Player && inputPermissions !== undefined) {
+                        return entity.matches(options) && inputPermissions.every(func => func(entity));
+                    }
+                    // それ以外は普通に引数適用
+                    else return entity.matches(options);
+                });
 
-                const loc: Vector3Builder = options === undefined ? stack.getPosition() : Vector3Builder.from(options.location as Vector3);
+                // 探索基準座標をvector3Builderにする
+                const loc: Vector3Builder = Vector3Builder.from(options.location as Vector3);
 
+                // 探索基準座標からの距離でソートする
                 const array = candidates.sort((a, b) => {
                     return immutableConfiguration.SORT_ORDERS[sortOrder](a, b, loc);
                 })
+                // c=の値で制限
                 .slice(0, limit);
 
+                // c=負数なら配列リバース
                 if (isArrayReversed) {
                     array.reverse();
                 }
 
+                // おわり！！！！！！！！
                 return array;
             }
         };
@@ -1043,6 +1067,10 @@ export class EntitySelectorReader {
         reader.text = selector;
         return reader.index();
     }
+
+    public static readonly SELECTOR_TYPES: RegistryKey<SelectorType, SelectorType> = RegistryKey.create();
+
+    // public static readonly SELECTOR_ARGUMENTS: RegistryKey<>
 }
 
 export interface EntitySelector {

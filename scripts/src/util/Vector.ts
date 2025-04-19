@@ -1,4 +1,4 @@
-import { Vector2, Vector3, VectorXZ } from "@minecraft/server";
+import { Block, Direction, Vector2, Vector3, VectorXZ } from "@minecraft/server";
 
 function isValidNumber(x: unknown): x is number {
     return typeof x === "number" && !Number.isNaN(x);
@@ -408,7 +408,7 @@ export class Vector3Builder implements Vector3 {
     }
 
     public static isValidVector3(value: unknown): value is Vector3 {
-        if (value === undefined || value === null) {
+        if (typeof value !== "object" || value === undefined || value === null) {
             return false;
         }
 
@@ -422,7 +422,7 @@ export class Vector3Builder implements Vector3 {
     }
 
     public static isValidVectorXZ(value: unknown): value is VectorXZ {
-        if (value === undefined || value === null) {
+        if (typeof value !== "object" || value === undefined || value === null) {
             return false;
         }
 
@@ -469,12 +469,25 @@ export class Vector3Builder implements Vector3 {
 
     public static from(vectorXZ: VectorXZ, y?: number): Vector3Builder;
 
-    public static from(vector: Vector3 | VectorXZ, y: number = 0): Vector3Builder {
-        if (this.isValidVector3(vector)) {
-            return new this(vector.x, vector.y, vector.z);
+    public static from(direction: Direction): Vector3Builder;
+
+    public static from(arg0: Vector3 | VectorXZ | Direction, arg1: number = 0): Vector3Builder {
+        if (this.isValidVector3(arg0)) {
+            return new this(arg0.x, arg0.y, arg0.z);
         }
-        else if (this.isValidVectorXZ(vector)) {
-            return new this(vector.x, y, vector.z);
+        else if (this.isValidVectorXZ(arg0)) {
+            return new this(arg0.x, arg1, arg0.z);
+        }
+        else if (Object.values(Direction).includes(arg0)) {
+            switch (arg0) {
+                case Direction.Up: return Vector3Builder.up();
+                case Direction.Down: return Vector3Builder.down();
+                case Direction.North: return Vector3Builder.back();
+                case Direction.South: return Vector3Builder.forward();
+                case Direction.East: return Vector3Builder.left();
+                case Direction.West: return Vector3Builder.right();
+                default: throw new TypeError("Unknown Direction Value");
+            }
         }
         else {
             throw new TypeError("Unknown Type Value");

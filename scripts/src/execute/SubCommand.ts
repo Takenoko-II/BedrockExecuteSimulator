@@ -76,9 +76,7 @@ export class At extends ForkableSubCommand {
             return stack.clone(css => {
                 css.write(DimensionTypes.get(entity.dimension.id) as DimensionType);
                 css.write({
-                    position: entity.location,
-                    dataType: "EntityUUID",
-                    eyeHeight: Vector3Builder.from(entity.getHeadLocation()).subtract(entity.location).y
+                    source: entity
                 });
                 css.write(entity.getRotation());
             });
@@ -100,9 +98,7 @@ export class Positioned extends RedirectableSubCommand {
 
     public redirect(stack: CommandSourceStack): CommandSourceStack {
         return stack.clone(css => css.write({
-            position: this.posVecResolver.resolve(css),
-            dataType: "Vector3",
-            eyeHeight: 0
+            source: this.posVecResolver.resolve(css)
         }));
     }
 
@@ -119,9 +115,7 @@ export class PositionedAs extends ForkableSubCommand {
     public fork(stack: CommandSourceStack): CommandSourceStack[] {
         return this.selector.getEntities(stack).map(entity => {
             return stack.clone(css => css.write({
-                position: entity.location,
-                dataType: "EntityUUID",
-                eyeHeight: Vector3Builder.from(entity.getHeadLocation()).subtract(entity.location).y
+                source: entity
             }));
         });
     }
@@ -194,11 +188,12 @@ export class FacingEntity extends ForkableSubCommand {
 
     public fork(stack: CommandSourceStack): CommandSourceStack[] {
         return this.selector.getEntities(stack).map(entity => {
-            const entityAnchor = new EntityAnchor(new CommandSourceStack(CommandSender.of(entity)));
-            entityAnchor.setType(this.anchorType);
+            const entityAnchor = new EntityAnchor();
+            entityAnchor.write(entity);
+            entityAnchor.write(this.anchorType);
 
             return stack.clone(css => {
-                const to = Vector3Builder.from(entity.location).add(entityAnchor.getOffsetBedrock());
+                const to = Vector3Builder.from(entity.location).add(entityAnchor.getOffset());
                 const dir = css.getPosition().getDirectionTo(to);
                 css.write(dir.getRotation2d());
             });

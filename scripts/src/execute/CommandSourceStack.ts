@@ -2,25 +2,23 @@ import { CommandResult, Dimension, DimensionType, DimensionTypes, Entity, Vector
 import { TripleAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { CommandSender, Origin } from "./CommandSender";
 import { AnchorType, EntityAnchor } from "./arguments/EntityAnchor";
-
-export type PositionDataType = "EntityUUID" | "Vector3";
+import { sentry } from "../lib/TypeSentry";
 
 export interface Position {
-    position: Vector3;
-
-    dataType: PositionDataType;
-
-    eyeHeight: number;
+    source: Entity | Vector3;
 }
 
 function isPosition(value: unknown): value is Position {
-    if (value === undefined || value === null) {
-        return false;
-    }
-    else {
-        return Vector3Builder.isValidVector3(value["position"])
-            && (value["dataType"] === "EntityUUID" || value["dataType"] === "Vector3");
-    }
+    return sentry.objectOf({
+        positionSource: sentry.unionOf(
+            sentry.objectOf({
+                x: sentry.number.nonNaN(),
+                y: sentry.number.nonNaN(),
+                z: sentry.number.nonNaN()
+            }),
+            sentry.classOf(Entity)
+        )
+    }).test(value);
 }
 
 export class CommandSourceStack {
@@ -32,13 +30,9 @@ export class CommandSourceStack {
 
     private readonly position: Vector3Builder = Vector3Builder.zero();
 
-    private positionDataType: PositionDataType = "Vector3";
-
-    private eyeHeight: number = 0;
-
     private readonly rotation: TripleAxisRotationBuilder = TripleAxisRotationBuilder.zero();
 
-    private readonly entityAnchor: EntityAnchor = new EntityAnchor(this);
+    private readonly entityAnchor: EntityAnchor = new EntityAnchor();
 
     public constructor(sender: CommandSender<Origin> = CommandSender.of(world)) {
         this.sender = sender;
@@ -48,16 +42,12 @@ export class CommandSourceStack {
         if (this.sender.origin instanceof Entity) {
             this.write(this.sender.origin);
             this.write({
-                position: this.sender.getPosition(),
-                dataType: "EntityUUID",
-                eyeHeight: Vector3Builder.from(this.sender.origin.getHeadLocation()).subtract(this.sender.origin.location).y
+                source: this.sender.origin
             });
         }
         else {
             this.write({
-                position: this.sender.getPosition(),
-                dataType: "Vector3",
-                eyeHeight: 0
+                source: this.sender.getPosition()
             });
         }
     }
@@ -82,14 +72,6 @@ export class CommandSourceStack {
         return this.position.clone();
     }
 
-    public getPositionDataType(): PositionDataType {
-        return this.positionDataType;
-    }
-
-    public getEyeHeight(): number {
-        return this.eyeHeight;
-    }
-
     public getRotation(): TripleAxisRotationBuilder {
         return this.rotation.clone();
     }
@@ -109,12 +91,7 @@ export class CommandSourceStack {
     public clone(modifier?: (newStack: CommandSourceStack) => void): CommandSourceStack {
         const stack = new CommandSourceStack();
         stack.executor = this.executor;
-        stack.entityAnchor.setType(this.entityAnchor.getType());
-        stack.write({
-            position: this.position,
-            dataType: this.positionDataType,
-            eyeHeight: this.eyeHeight
-        });
+        stack.entityAnchor.write(this.entityAnchor);
         stack.write(this.rotation);
         stack.write(DimensionTypes.get(this.dimension.id) as DimensionType);
 
@@ -140,11 +117,18 @@ export class CommandSourceStack {
             this.executor = value;
         }
         else if (isPosition(value)) {
-            this.position.x = value.position.x;
-            this.position.y = value.position.y;
-            this.position.z = value.position.z;
-            this.positionDataType = value.dataType;
-            this.eyeHeight = value.eyeHeight;
+            this.entityAnchor.write(value.source);
+
+            if (value.source instanceof Entity) {
+                this.position.x = value.source.location.x;
+                this.position.y = value.source.location.y;
+                this.position.z = value.source.location.z;
+            }
+            else {
+                this.position.x = value.source.x;
+                this.position.y = value.source.y;
+                this.position.z = value.source.z;
+            }
         }
         else if (TripleAxisRotationBuilder.isValidVector2(value)) {
             const builder = TripleAxisRotationBuilder.from(value);
@@ -155,8 +139,8 @@ export class CommandSourceStack {
             this.dimension = world.getDimension(value.typeId);
         }
         else if (value === "eyes" || value === "feet") {
-            this.entityAnchor.setType(value);
-            this.positionDataType = "Vector3";
+            this.entityAnchor.write(value);
+            this.entityAnchor.write(this.position);
         }
     }
 

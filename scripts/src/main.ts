@@ -1,5 +1,6 @@
 import { world } from "@minecraft/server";
 import { Execute } from "./execute/Execute";
+import { CommandSourceStack } from "./execute/CommandSourceStack";
 
 world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) => {
     const execute: Execute = new Execute();
@@ -9,7 +10,7 @@ world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) =>
         .positioned.$("^ ^ ^1")
         .run(s => {
             s.getPosition().getRotation2d().getLocalAxisProvider().left().getLocalAxisProvider()
-        })
+        });
 });
 
 /** TODO
