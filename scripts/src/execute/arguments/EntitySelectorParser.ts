@@ -173,6 +173,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
 
         while (!this.isOver()) {
             const value: unknown = this.value();
+            list.push(value);
 
             if (this.next(true, ']')) {
                 return list;
@@ -227,6 +228,6 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
     }
 
     static {
-        new EntitySelectorParser("@e[type=player,hasitem={item=apple,quantity=0},name=!foo]").parse();
+        new EntitySelectorParser("@e[type=player,hasitem=[{item=apple,quantity=0},{}],name=!foo]").parse();
     }
 }
