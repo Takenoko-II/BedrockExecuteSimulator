@@ -1,5 +1,5 @@
 import { CommandSourceStack } from "../CommandSourceStack";
-import { TripleAxisRotationBuilder, Vector3Builder } from "../../util/Vector";
+import { DualAxisRotationBuilder, TripleAxisRotationBuilder, Vector3Builder } from "../../util/Vector";
 
 type VectorComponentType = "absolute" | "relative" | "local";
 
@@ -30,16 +30,16 @@ export class PositionVectorResolver {
 
     public resolve(stack: CommandSourceStack): Vector3Builder {
         if (this.isLocal()) {
-            const localAxisProvider = stack.getRotation().getLocalAxisProvider();
-            
+            const objectCoordsSystem = TripleAxisRotationBuilder.from(stack.getRotation()).getObjectCoordsSystem();
+
             return stack.getPosition()
-                .add(localAxisProvider.getX().length(this.x.value))
-                .add(localAxisProvider.getY().length(this.y.value))
-                .add(localAxisProvider.getZ().length(this.z.value));
+                .add(objectCoordsSystem.getX().length(this.x.value))
+                .add(objectCoordsSystem.getY().length(this.y.value))
+                .add(objectCoordsSystem.getZ().length(this.z.value));
         }
         else if (this.isAbsoluteRelative()) {
             const v = stack.getPosition();
-            
+
             if (this.x.type === "relative") {
                 v.x += this.x.value;
             }
@@ -78,9 +78,9 @@ export class RotationVectorResolver {
         this.pitch = pitch;
     }
 
-    public resolve(stack: CommandSourceStack): TripleAxisRotationBuilder {
+    public resolve(stack: CommandSourceStack): DualAxisRotationBuilder {
         const v = stack.getRotation();
-            
+
             if (this.yaw.type === "relative") {
                 v.yaw += this.yaw.value;
             }

@@ -28,6 +28,10 @@ export class EntityAnchor {
         return new Vector3Builder(0, this.getEyeHeight(), 0);
     }
 
+    public getPositionSource(): Entity | Vector3 {
+        return this.source ?? Vector3Builder.zero();
+    }
+
     public write(type: AnchorType): void;
 
     public write(source: Entity | Vector3): void;

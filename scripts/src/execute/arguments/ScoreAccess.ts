@@ -1,5 +1,5 @@
 import { world } from "@minecraft/server";
-import { NumberRange } from "../../util/NumberRange";
+import { IntRange } from "../../util/NumberRange";
 import { EntitySelector, EntitySelectorReader, SelectorParseError } from "./EntitySelectorReader";
 import { CommandSourceStack } from "../CommandSourceStack";
 
@@ -55,7 +55,7 @@ export class ScoreAccess {
         }
 
         if (typeof other === "string") {
-            return NumberRange.parse(other, true, true).within(valueA);
+            return IntRange.parse(other, true).within(valueA);
         }
         else {
             const valueB = other.getValue(stack);

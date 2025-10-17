@@ -1,11 +1,11 @@
 import { CommandResult, Dimension, DimensionType, DimensionTypes, Entity, Vector2, Vector3, world } from "@minecraft/server";
-import { TripleAxisRotationBuilder, Vector3Builder } from "../util/Vector";
+import { DualAxisRotationBuilder, TripleAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { CommandSender, Origin } from "./CommandSender";
 import { AnchorType, EntityAnchor } from "./arguments/EntityAnchor";
 import { sentry } from "../lib/TypeSentry";
 
 export interface Position {
-    source: Entity | Vector3;
+    readonly positionSource: Entity | Vector3;
 }
 
 function isPosition(value: unknown): value is Position {
@@ -30,7 +30,7 @@ export class CommandSourceStack {
 
     private readonly position: Vector3Builder = Vector3Builder.zero();
 
-    private readonly rotation: TripleAxisRotationBuilder = TripleAxisRotationBuilder.zero();
+    private readonly rotation: DualAxisRotationBuilder = DualAxisRotationBuilder.zero();
 
     private readonly entityAnchor: EntityAnchor = new EntityAnchor();
 
@@ -42,12 +42,12 @@ export class CommandSourceStack {
         if (this.sender.origin instanceof Entity) {
             this.write(this.sender.origin);
             this.write({
-                source: this.sender.origin
+                positionSource: this.sender.origin
             });
         }
         else {
             this.write({
-                source: this.sender.getPosition()
+                positionSource: this.sender.getPosition()
             });
         }
     }
@@ -72,7 +72,7 @@ export class CommandSourceStack {
         return this.position.clone();
     }
 
-    public getRotation(): TripleAxisRotationBuilder {
+    public getRotation(): DualAxisRotationBuilder {
         return this.rotation.clone();
     }
 
@@ -92,6 +92,10 @@ export class CommandSourceStack {
         const stack = new CommandSourceStack();
         stack.executor = this.executor;
         stack.entityAnchor.write(this.entityAnchor);
+        this.entityAnchor
+        stack.write({
+            positionSource: this.entityAnchor.getPositionSource()
+        });
         stack.write(this.rotation);
         stack.write(DimensionTypes.get(this.dimension.id) as DimensionType);
 
@@ -113,25 +117,27 @@ export class CommandSourceStack {
     public write(entityAnchorType: AnchorType): void;
 
     public write(value: Entity | Position | Vector2 | DimensionType | AnchorType): void {
+        // console.log(Object.keys(value), isPosition(value));
+
         if (value instanceof Entity) {
             this.executor = value;
         }
         else if (isPosition(value)) {
-            this.entityAnchor.write(value.source);
+            this.entityAnchor.write(value.positionSource);
 
-            if (value.source instanceof Entity) {
-                this.position.x = value.source.location.x;
-                this.position.y = value.source.location.y;
-                this.position.z = value.source.location.z;
+            if (value.positionSource instanceof Entity) {
+                this.position.x = value.positionSource.location.x;
+                this.position.y = value.positionSource.location.y;
+                this.position.z = value.positionSource.location.z;
             }
             else {
-                this.position.x = value.source.x;
-                this.position.y = value.source.y;
-                this.position.z = value.source.z;
+                this.position.x = value.positionSource.x;
+                this.position.y = value.positionSource.y;
+                this.position.z = value.positionSource.z;
             }
         }
-        else if (TripleAxisRotationBuilder.isValidVector2(value)) {
-            const builder = TripleAxisRotationBuilder.from(value);
+        else if (DualAxisRotationBuilder.isVector2(value)) {
+            const builder = DualAxisRotationBuilder.from(value);
             this.rotation.yaw = builder.yaw;
             this.rotation.pitch = builder.pitch;
         }

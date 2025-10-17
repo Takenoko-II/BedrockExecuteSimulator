@@ -1,5 +1,5 @@
 import { Block, Dimension, Entity, World } from "@minecraft/server";
-import { TripleAxisRotationBuilder, Vector3Builder } from "../util/Vector";
+import { DualAxisRotationBuilder, TripleAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { MinecraftDimensionTypes } from "../lib/@minecraft/vanilla-data/lib/index";
 
 export type Origin = Entity | Block | World;
@@ -15,7 +15,7 @@ export abstract class CommandSender<T extends Origin> {
 
     public abstract getPosition(): Vector3Builder;
 
-    public abstract getRotation(): TripleAxisRotationBuilder;
+    public abstract getRotation(): DualAxisRotationBuilder;
 
     private static EntityCommandSender = class extends CommandSender<Entity> {
         public constructor(entity: Entity) {
@@ -30,8 +30,8 @@ export abstract class CommandSender<T extends Origin> {
             return Vector3Builder.from(this.origin.location)
         }
 
-        public getRotation(): TripleAxisRotationBuilder {
-            return TripleAxisRotationBuilder.from(this.origin.getRotation())
+        public getRotation(): DualAxisRotationBuilder {
+            return DualAxisRotationBuilder.from(this.origin.getRotation())
         }
     }
 
@@ -48,8 +48,8 @@ export abstract class CommandSender<T extends Origin> {
             return Vector3Builder.from(this.origin.location)
         }
 
-        public getRotation(): TripleAxisRotationBuilder {
-            return TripleAxisRotationBuilder.zero();
+        public getRotation(): DualAxisRotationBuilder {
+            return DualAxisRotationBuilder.zero();
         }
     }
 
@@ -66,8 +66,8 @@ export abstract class CommandSender<T extends Origin> {
             return Vector3Builder.from(this.origin.getDefaultSpawnLocation());
         }
 
-        public getRotation(): TripleAxisRotationBuilder {
-            return TripleAxisRotationBuilder.zero();
+        public getRotation(): DualAxisRotationBuilder {
+            return DualAxisRotationBuilder.zero();
         }
     }
 

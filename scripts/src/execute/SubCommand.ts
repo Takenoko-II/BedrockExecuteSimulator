@@ -76,7 +76,7 @@ export class At extends ForkableSubCommand {
             return stack.clone(css => {
                 css.write(DimensionTypes.get(entity.dimension.id) as DimensionType);
                 css.write({
-                    source: entity
+                    positionSource: entity
                 });
                 css.write(entity.getRotation());
             });
@@ -98,7 +98,7 @@ export class Positioned extends RedirectableSubCommand {
 
     public redirect(stack: CommandSourceStack): CommandSourceStack {
         return stack.clone(css => css.write({
-            source: this.posVecResolver.resolve(css)
+            positionSource: this.posVecResolver.resolve(css)
         }));
     }
 
@@ -115,7 +115,7 @@ export class PositionedAs extends ForkableSubCommand {
     public fork(stack: CommandSourceStack): CommandSourceStack[] {
         return this.selector.getEntities(stack).map(entity => {
             return stack.clone(css => css.write({
-                source: entity
+                positionSource: entity
             }));
         });
     }
@@ -192,10 +192,14 @@ export class FacingEntity extends ForkableSubCommand {
             entityAnchor.write(entity);
             entityAnchor.write(this.anchorType);
 
+            console.log(stack.clone());
+
             return stack.clone(css => {
                 const to = Vector3Builder.from(entity.location).add(entityAnchor.getOffset());
                 const dir = css.getPosition().getDirectionTo(to);
+                console.log("p:",css.getPosition())
                 css.write(dir.getRotation2d());
+                console.log("q:",css.getPosition())
             });
         });
     }

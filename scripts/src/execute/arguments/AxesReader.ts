@@ -20,7 +20,7 @@ export class AxesReader {
             if (chars.length !== set.size) {
                 throw new AxesParseError("文字を重複させることはできません");
             }
-            else if (chars.every(c => "xyz".includes(c))) {
+            else if (!chars.every(c => "xyz".includes(c))) {
                 throw new AxesParseError("x, y, z以外は軸として無効な文字です");
             }
             else {

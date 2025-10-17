@@ -379,20 +379,20 @@ const immutableConfiguration: ImmutableConfiguration = {
             resolver: (input, not, entityQueryOptions) => {
                 const gameMode: GameMode = (() => {
                     switch (input) {
-                        case GameMode.survival:
+                        case GameMode.Survival:
                         case "s":
                         case "0":
-                            return GameMode.survival;
-                        case GameMode.creative:
+                            return GameMode.Survival;
+                        case GameMode.Creative:
                         case "c":
                         case "1":
-                            return GameMode.creative;
-                        case GameMode.adventure:
+                            return GameMode.Creative;
+                        case GameMode.Adventure:
                         case "a":
                         case "2":
-                            return GameMode.adventure;
-                        case GameMode.spectator:
-                            return GameMode.spectator;
+                            return GameMode.Adventure;
+                        case GameMode.Spectator:
+                            return GameMode.Spectator;
                         default:
                             throw new SelectorParseError("セレクター引数m=には無効な値です: '" + input + "'");
                     }
@@ -1048,8 +1048,6 @@ export class EntitySelectorReader {
                 const array = candidates.sort((a, b) => {
                     return immutableConfiguration.SORT_ORDERS[sortOrder](a, b, loc);
                 })
-                // c=の値で制限
-                .slice(0, limit);
 
                 // c=負数なら配列リバース
                 if (isArrayReversed) {
@@ -1057,7 +1055,9 @@ export class EntitySelectorReader {
                 }
 
                 // おわり！！！！！！！！
-                return array;
+                return array
+                // c=の値で制限
+                .slice(0, limit);;
             }
         };
     }
