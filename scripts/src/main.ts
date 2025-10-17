@@ -1,5 +1,6 @@
 import { world } from "@minecraft/server";
 import { Execute } from "./execute/Execute";
+import { EntitySelectorParser } from "./execute/arguments/EntitySelectorParser";
 
 world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) => {
     const execute: Execute = new Execute();
@@ -8,6 +9,8 @@ world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) =>
         world.scoreboard.getObjective("a")!!.addScore(s.getExecutor(), 1);
     });
 });
+
+EntitySelectorParser
 
 /** TODO
  * hasitem=

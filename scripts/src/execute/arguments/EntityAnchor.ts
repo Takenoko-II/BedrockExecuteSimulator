@@ -4,7 +4,7 @@ import { Vector3Builder } from "../../util/Vector";
 export type AnchorType = "eyes" | "feet";
 
 export class EntityAnchor {
-    private source: Entity | Vector3;
+    private source: Entity | Vector3 = Vector3Builder.zero();
 
     private type: AnchorType = "feet";
 

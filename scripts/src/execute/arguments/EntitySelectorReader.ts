@@ -939,7 +939,7 @@ export class EntitySelectorReader {
 
         // type=とtype=!が未指定ならばセレクタタイプのデフォルトタイプ(要修正)
         if (entityQueryOptionsWithC.type === undefined && entityQueryOptionsWithC.excludeTypes === undefined) {
-            entityQueryOptionsWithC.type = selectorType.defaultTypeSpecific;
+            entityQueryOptionsWithC.type = selectorType.defaultTypeSpecific as string; // optional string
         }
 
         // dx, dy, dzのいずれかが指定されていればvolumeに書き込む
@@ -1067,8 +1067,6 @@ export class EntitySelectorReader {
         reader.text = selector;
         return reader.index();
     }
-
-    public static readonly SELECTOR_TYPES: RegistryKey<SelectorType, SelectorType> = RegistryKey.create();
 
     // public static readonly SELECTOR_ARGUMENTS: RegistryKey<>
 }

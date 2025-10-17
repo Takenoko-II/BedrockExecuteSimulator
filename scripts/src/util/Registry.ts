@@ -1,17 +1,17 @@
 class RegistryError extends Error {}
 
-export class RegistryKey<I, O> {
+export class RegistryKey<K, I, O> {
     private static registryKeyMaxId: number = 0;
 
     public readonly id: number = RegistryKey.registryKeyMaxId++;
 
     private constructor(public readonly toStoredValue: (i: I) => O) {}
 
-    public static create<T, U>(toStoredValue: (i: T) => U): RegistryKey<T, U>;
+    public static create<K, T, U>(toStoredValue: (i: T) => U): RegistryKey<K, T, U>;
 
-    public static create<T>(): RegistryKey<T, T>;
+    public static create<K, T>(): RegistryKey<K, T, T>;
 
-    public static create<T, U>(toStoredValue?: (i: T) => U): RegistryKey<T, U> | RegistryKey<T, T> {
+    public static create<K, T, U>(toStoredValue?: (i: T) => U): RegistryKey<K, T, U> | RegistryKey<K, T, T> {
         if (toStoredValue) {
             return new this(toStoredValue);
         }
@@ -21,18 +21,18 @@ export class RegistryKey<I, O> {
     }
 }
 
-export class ImmutableRegistry<I, O> {
-    private readonly __registry__: Map<string, O> = new Map();
+export class ImmutableRegistry<K, I, O> {
+    private readonly __registry__: Map<K, O> = new Map();
 
-    private readonly key: RegistryKey<I, O>;
+    private readonly key: RegistryKey<K, I, O>;
 
-    public readonly lookup: RegistryLookup<O> = new RegistryLookup(this.__registry__);
+    public readonly lookup: RegistryLookup<K, O> = new RegistryLookup(this.__registry__);
 
-    public constructor(key: RegistryKey<I, O>);
+    public constructor(key: RegistryKey<K, I, O>);
 
-    public constructor(registry: ImmutableRegistry<I, O>);
+    public constructor(registry: ImmutableRegistry<K, I, O>);
 
-    public constructor(keyOrRegistry: RegistryKey<I, O> | ImmutableRegistry<I, O>) {
+    public constructor(keyOrRegistry: RegistryKey<K, I, O> | ImmutableRegistry<K, I, O>) {
         if (keyOrRegistry instanceof RegistryKey) {
             this.key = keyOrRegistry;
         }
@@ -44,30 +44,53 @@ export class ImmutableRegistry<I, O> {
         }
     }
 
-    protected register(key: string, value: I): void {
+    protected register(key: K, value: I): void {
         this.__registry__.set(key, this.key.toStoredValue(value));
     }
 
-    protected unregister(key: string): void {
+    protected unregister(key: K): void {
         this.__registry__.delete(key);
     }
 }
 
-class RegistryLookup<O> {
-    public constructor(private readonly __registry__: Map<string, O>) {}
+interface RegistryEntry<K, O> {
+    readonly name: K;
 
-    public find(name: string): O {
+    readonly value: O;
+}
+
+class RegistryLookup<K, O> {
+    public constructor(private readonly __registry__: Map<K, O>) {}
+
+    public has(name: K): boolean {
+        return this.__registry__.has(name);
+    }
+
+    public find(name: K): O {
         if (this.__registry__.has(name)) {
             return this.__registry__.get(name)!;
         }
         else {
-            throw new RegistryError();
+            throw new RegistryError("存在しないキーです");
         }
+    }
+
+    public entries(): RegistryEntry<K, O>[] {
+        const array: RegistryEntry<K, O>[] = [];
+
+        this.__registry__.forEach((v, k) => {
+            array.push({
+                name: k,
+                value: v
+            })
+        });
+
+        return array;
     }
 }
 
 export class ImmutableRegistries {
-    private readonly __registries__: Map<RegistryKey<unknown, unknown>, ImmutableRegistry<unknown, unknown>> = new Map();
+    private readonly __registries__: Map<RegistryKey<unknown, unknown, unknown>, ImmutableRegistry<unknown, unknown, unknown>> = new Map();
 
     public constructor();
 
@@ -81,31 +104,38 @@ export class ImmutableRegistries {
         }
     }
 
-    private createRegistry(registryKey: RegistryKey<unknown, unknown>): void {
+    private createRegistry(registryKey: RegistryKey<unknown, unknown, unknown>): void {
         this.__registries__.set(registryKey, new ImmutableRegistry(registryKey));
     }
 
-    public get<I, O>(registryKey: RegistryKey<I, O>): ImmutableRegistry<I, O> {
-        if (!this.__registries__.has(registryKey as RegistryKey<unknown, unknown>)) {
-            this.createRegistry(registryKey as RegistryKey<unknown, unknown>);
+    public get<K, I, O>(registryKey: RegistryKey<K, I, O>): ImmutableRegistry<K, I, O> {
+        if (!this.__registries__.has(registryKey as RegistryKey<unknown, unknown, unknown>)) {
+            this.createRegistry(registryKey as RegistryKey<unknown, unknown, unknown>);
         }
 
-        return this.__registries__.get(registryKey as RegistryKey<unknown, unknown>) as ImmutableRegistry<I, O>;
+        return this.__registries__.get(registryKey as RegistryKey<unknown, unknown, unknown>) as ImmutableRegistry<K, I, O>;
     }
 }
 
-export class Registry<I, O> extends ImmutableRegistry<I, O> {
-    public override register(key: string, value: I): void {
+export class Registry<K, I, O> extends ImmutableRegistry<K, I, O> {
+    public override register(key: K, value: I): void {
         super.register(key, value);
     }
 
-    public override unregister(key: string): void {
+    public override unregister(key: K): void {
         super.unregister(key);
     }
 }
 
 export class Registries extends ImmutableRegistries {
-    public override get<I, O>(registryKey: RegistryKey<I, O>): Registry<I, O> {
-        return super.get(registryKey) as Registry<I, O>;
+    public override get<K, I, O>(registryKey: RegistryKey<K, I, O>): Registry<K, I, O> {
+        return super.get(registryKey) as Registry<K, I, O>;
+    }
+
+    public withRegistrar<K, I, O>(registryKey: RegistryKey<K, I, O>, callback: (register: (key: K, value: I) => void) => void): Registries {
+        callback((key, value) => {
+            this.get(registryKey).register(key, value);
+        });
+        return this;
     }
 }

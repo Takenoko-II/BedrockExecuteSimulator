@@ -449,31 +449,31 @@ export class IfScoreMatches extends GuardableSubCommand {
 }
 
 export class UnlessEntity extends IfEntity {
-    public test(stack: CommandSourceStack): boolean {
+    public override test(stack: CommandSourceStack): boolean {
         return !super.test(stack);
     }
 }
 
 export class UnlessBlock extends IfBlock {
-    public test(stack: CommandSourceStack): boolean {
+    public override test(stack: CommandSourceStack): boolean {
         return !super.test(stack);
     }
 }
 
 export class UnlessBlocks extends IfBlocks {
-    public test(stack: CommandSourceStack): boolean {
+    public override test(stack: CommandSourceStack): boolean {
         return !super.test(stack);
     }
 }
 
 export class UnlessScoreCompare extends IfScoreCompare {
-    public test(stack: CommandSourceStack): boolean {
+    public override test(stack: CommandSourceStack): boolean {
         return !super.test(stack);
     }
 }
 
 export class UnlessScoreMatches extends IfScoreMatches {
-    public test(stack: CommandSourceStack): boolean {
+    public override test(stack: CommandSourceStack): boolean {
         return !super.test(stack);
     }
 }

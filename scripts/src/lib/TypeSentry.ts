@@ -63,7 +63,7 @@ class NumberModel extends PrimitiveModel<number> {
         const that = this;
 
         return new (class extends NumberModel {
-            public test(x: unknown): x is number {
+            public override test(x: unknown): x is number {
                 return that.test(x) && !Number.isNaN(x);
             }
         })();
@@ -77,7 +77,7 @@ class NumberModel extends PrimitiveModel<number> {
         const that = this;
 
         return new (class extends NumberModel {
-            public test(x: unknown): x is number {
+            public override test(x: unknown): x is number {
                 return that.test(x) && Number.isInteger(x);
             }
         })();
@@ -94,7 +94,7 @@ class NumberModel extends PrimitiveModel<number> {
  * @deprecated
  */
 class IntModel extends NumberModel {
-    public test(x: unknown): x is number {
+    public override test(x: unknown): x is number {
         return super.test(x) && Number.isInteger(x);
     }
 
@@ -102,11 +102,11 @@ class IntModel extends NumberModel {
      * 値が`NaN`でないことを実行時の検査において追加で要求するインスタンスを新しく生成します。
      * @returns ランタイム条件付きインスタンス
      */
-    public nonNaN(): IntModel {
+    public override nonNaN(): IntModel {
         const that = this;
 
         return new (class extends IntModel {
-            public test(x: unknown): x is number {
+            public override test(x: unknown): x is number {
                 return that.test(x) && !Number.isNaN(x);
             }
         })();
@@ -116,7 +116,7 @@ class IntModel extends NumberModel {
         return "number(int)"
     }
 
-    public static readonly INSTANCE: IntModel = new this();
+    public static override readonly INSTANCE: IntModel = new this();
 }
 
 class BigIntModel extends PrimitiveModel<bigint> {
@@ -158,7 +158,7 @@ class StringModel extends PrimitiveModel<string> {
         const that = this;
 
         return new (class extends StringModel {
-            public test(x: unknown): x is string {
+            public override test(x: unknown): x is string {
                 return that.test(x) && (min <= x.length && x.length <= max);
             }
         })();
@@ -172,7 +172,7 @@ class StringModel extends PrimitiveModel<string> {
         const that = this;
 
         return new (class extends StringModel {
-            public test(x: unknown): x is string {
+            public override test(x: unknown): x is string {
                 return that.test(x) && new RegExp(pattern).test(x);
             }
         })();
@@ -214,7 +214,7 @@ class AnyModel extends TypeModel<any> {
         super();
     }
 
-    public test(x: unknown): x is any {
+    public test(_: unknown): _ is any {
         return true;
     }
 
@@ -226,7 +226,7 @@ class AnyModel extends TypeModel<any> {
 }
 
 class NeverModel extends TypeModel<never> {
-    public test(x: unknown): x is never {
+    public test(_: unknown): _ is never {
         return false;
     }
 
@@ -235,6 +235,18 @@ class NeverModel extends TypeModel<never> {
     }
 
     public static readonly INSTANCE: NeverModel = new this();
+}
+
+class UnknownModel extends TypeModel<unknown> {
+    public override test(_: unknown): _ is unknown {
+        return true;
+    }
+
+    public override toString(): string {
+        return "unknown";
+    }
+
+    public static readonly INSTANCE: UnknownModel = new this();
 }
 
 class VoidModel extends TypeModel<void> {
@@ -281,7 +293,7 @@ class ObjectModel<T> extends TypeModel<T> {
         const that = this;
 
         return new (class extends ObjectModel<T> {
-            public test(x: unknown): x is T {
+            public override test(x: unknown): x is T {
                 if (that.test(x)) {
                     return Object.keys(x as object).length === Object.keys(this.object as object).length;
                 }
@@ -296,7 +308,7 @@ class ObjectModel<T> extends TypeModel<T> {
         let first = true;
         for (const [key, model] of Object.entries(this.object as Record<string | number | symbol, TypeModel<unknown>>)) {
             if (!first) {
-                string += ", ";
+                string += "; ";
             }
 
             let k: string = key;
@@ -354,7 +366,7 @@ class ArrayModel<T> extends TypeModel<T[]> {
         const that = this;
 
         return new (class extends ArrayModel<T> {
-            public test(x: unknown): x is T[] {
+            public override test(x: unknown): x is T[] {
                 return that.test(x) && (min <= x.length && x.length <= max);
             }
         })(this.type);
@@ -758,6 +770,11 @@ export class TypeSentry {
      * 全てのサブクラス `never`
      */
     public readonly never: NeverModel = NeverModel.INSTANCE;
+
+    /**
+     * `unknown`
+     */
+    public readonly unknown: UnknownModel = UnknownModel.INSTANCE;
 
     /**
      * `number`のランタイムチェック付きインスタンス
