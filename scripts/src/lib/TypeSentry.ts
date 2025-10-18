@@ -660,6 +660,49 @@ class TupleModel<T extends TypeModel<unknown>[]> extends TypeModel<TypeModelArra
     }
 }
 
+class RecordModel<K extends string | number | symbol, V> extends TypeModel<Record<K, V>> {
+    private readonly keyType: TypeModel<K>;
+
+    private readonly valueType: TypeModel<V>;
+
+    public constructor(keyType: TypeModel<K>, valueType: TypeModel<V>) {
+        super();
+        this.keyType = keyType;
+        this.valueType = valueType;
+    }
+
+    public test(x: unknown): x is Record<K, V> {
+        if (typeof x !== "object" || x === null) return false;
+
+        for (const [key, value] of Object.entries(x)) {
+            if (!this.keyType.test(key)) return false;
+            if (!this.valueType.test(value)) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * `Record`のキーの型を表現する`TypeModel`を返します。
+     * @returns (キー)型の`TypeModel`インスタンス
+     */
+    public getModelOfKey(): TypeModel<K> {
+        return this.keyType;
+    }
+
+    /**
+     * `Record`のキーの型を表現する`TypeModel`を返します。
+     * @returns (値)型の`TypeModel`インスタンス
+     */
+    public getModelOfValue(): TypeModel<V> {
+        return this.valueType;
+    }
+
+    public override toString(): string {
+        return "Record<" + this.keyType.toString() + ", " + this.valueType.toString() + ">";
+    }
+}
+
 class LiteralModel<T extends boolean | number | bigint | string | symbol> extends PrimitiveModel<T> {
     private readonly value: T;
 
@@ -762,7 +805,8 @@ export class TypeSentry {
     public readonly symbol: SymbolModel = SymbolModel.INSTANCE;
 
     /**
-     * 全てのスーパークラス `any`
+     * 全てのスーパークラス `any`    
+     * 基本的に非推奨
      */
     public readonly any: AnyModel = AnyModel.INSTANCE;
 
@@ -827,6 +871,16 @@ export class TypeSentry {
      */
     public setOf<T>(valueType: TypeModel<T>): SetModel<T> {
         return new SetModel(valueType);
+    }
+
+    /**
+     * 型 `Record`
+     * @param keyType `Record`のキーの型を表現する`TypeModel`
+     * @param valueType `Record`の値の型を表現する`TypeModel`
+     * @returns `Record`型を表現する`TypeModel`
+     */
+    public recordOf<K extends string | number | symbol, V>(keyType: TypeModel<K>, valueType: TypeModel<V>): RecordModel<K, V> {
+        return new RecordModel(keyType, valueType);
     }
 
     /**

@@ -22,7 +22,7 @@ const dropdownOptionType = sentry.objectOf({
  * このライブラリが投げる例外のクラス
  */
 export class ServerFormError extends TypeError {
-    public constructor(public readonly cause: Error) {
+    public constructor(public override readonly cause: Error) {
         super("Unhandled Promise Rejection: " + cause.message);
     }
 }
@@ -873,7 +873,7 @@ export class ActionFormWrapper extends ServerFormWrapper implements ActionPushab
             tags: button.tags ?? [],
             callbacks: new Set(button.on ? [button.on] : undefined),
             type: "ACTION_BUTTON"
-        });
+        } as ActionButton);
         return this;
     }
 
@@ -948,6 +948,7 @@ export class ActionFormWrapper extends ServerFormWrapper implements ActionPushab
             }
         }
 
+        // @ts-ignore "@minecraft/server"のPlayerと"@minecraft/server-ui"のPlayerが一致しないんだよねなんか
         const promise = form.show(player).then(response => {
             if (response.selection === undefined) {
                 const that = this;
@@ -1200,16 +1201,16 @@ export class ModalFormWrapper extends ServerFormWrapper implements Submittable, 
         
         for (const value of this.values) {
             if (ServerFormElementPredicates.isToggle(value)) {
-                form.toggle(value.label, value.defaultValue);
+                form.toggle(value.label, { defaultValue: value.defaultValue });
             }
             else if (ServerFormElementPredicates.isSlider(value)) {
-                form.slider(value.label, value.range.min, value.range.max, value.step, value.defaultValue);
+                form.slider(value.label, value.range.min, value.range.max, { valueStep: value.step, defaultValue: value.defaultValue });
             }
             else if (ServerFormElementPredicates.isDropdown(value)) {
-                form.dropdown(value.label, value.list.map(({ text }) => text), value.defaultValueIndex);
+                form.dropdown(value.label, value.list.map(({ text }) => text), { defaultValueIndex: value.defaultValueIndex });
             }
             else if (ServerFormElementPredicates.isTextField(value)) {
-                form.textField(value.label, value.placeHolder, value.defaultValue);
+                form.textField(value.label, value.placeHolder, { defaultValue: value.defaultValue });
             }
             else if (ServerFormElementPredicates.isLabel(value)) {
                 form.label(value.text);
@@ -1225,6 +1226,7 @@ export class ModalFormWrapper extends ServerFormWrapper implements Submittable, 
             }
         }
 
+        // @ts-ignore "@minecraft/server"のPlayerと"@minecraft/server-ui"のPlayerが一致しないんだよねなんか
         const promise = form.show(player).then(response => {
             if (response.formValues === undefined) {
                 const that = this;
@@ -1260,29 +1262,31 @@ export class ModalFormWrapper extends ServerFormWrapper implements Submittable, 
             const elements = that.values.filter(ServerFormElementPredicates.isModalFormElement) as ModalFormElement[];
 
             function getMatchingElementIndex(id: string, predicate: (element: ModalFormElement) => boolean): number {
-                const index = that.values.findIndex(value => value.id === id);
+                const index = elements.findIndex(value => value.id === id);
                 if (index === -1) {
                     throw new ServerFormError(new Error("指定されたIDの要素が見つかりませんでした"));
                 }
                 else if (predicate(elements[index])) return index;
                 else {
-                    throw new ServerFormError(new Error("指定されたIDの要素の型が正しくありません"));
+                    throw new ServerFormError(new Error("指定されたIDの要素の型が正しくありません: " + JSON.stringify(elements) + ", " + predicate.toString() + ", " + id + ", " + index));
                 }
             }
+
+            const inputValues = response.formValues!.filter(x => x !== undefined);
 
             const submitEvent: ModalFormSubmitEvent = {
                 player,
                 getToggleInput(id) {
                     const index = getMatchingElementIndex(id, ServerFormElementPredicates.isToggle);
-                    return response.formValues![index] as boolean;
+                    return inputValues[index] as boolean;
                 },
                 getSliderInput(id) {
                     const index = getMatchingElementIndex(id, ServerFormElementPredicates.isSlider);
-                    return response.formValues![index] as number;
+                    return inputValues[index] as number;
                 },
                 getDropdownInput(id) {
                     const index = getMatchingElementIndex(id, ServerFormElementPredicates.isDropdown);
-                    const optionIndex = response.formValues![index] as number;
+                    const optionIndex = inputValues[index] as number;
                     return {
                         index: optionIndex,
                         value: (elements[index] as ModalFormDropdown).list[optionIndex]
@@ -1290,15 +1294,17 @@ export class ModalFormWrapper extends ServerFormWrapper implements Submittable, 
                 },
                 getTextFieldInput(id) {
                     const index = getMatchingElementIndex(id, ServerFormElementPredicates.isTextField);
-                    return response.formValues![index] as string;
+                    return inputValues[index] as string;
                 },
                 getAllInputs() {
-                    return response.formValues!.map((formValue, index) => {
-                        const value = elements[index];
-                        return ServerFormElementPredicates.isDropdown(value)
-                            ? { index: formValue as number, value: value.list[formValue as number] }
-                            : formValue;
-                    });
+                    return inputValues
+                        .map((formValue, index) => {
+                            const value = elements[index];
+                            return ServerFormElementPredicates.isDropdown(value)
+                                ? ({ index: formValue as number, value: value.list[formValue as number] } as SelectedDropdownValue)
+                                : formValue;
+                        })
+                        .filter(x => x !== undefined);
                 }
             };
 
@@ -1421,6 +1427,7 @@ export class MessageFormWrapper extends ServerFormWrapper implements MessagePush
             .button1(this.buttonPair[0].name)
             .button2(this.buttonPair[1].name);
 
+        // @ts-ignore "@minecraft/server"のPlayerと"@minecraft/server-ui"のPlayerが一致しないんだよねなんか
         const promise = form.show(player).then(response => {
             if (response.selection === undefined) {
                 const that = this;
@@ -1438,12 +1445,12 @@ export class MessageFormWrapper extends ServerFormWrapper implements MessagePush
                     callbackFn(cancelEvent);
                 });
 
-                if (response.cancelationReason === "UserBusy") {
+                if (response.cancelationReason === FormCancelationReason.UserBusy) {
                     this.cancelationCallbacks.get("UserBusy")!.forEach(callbackFn => {
                         callbackFn(cancelEvent);
                     });
                 }
-                else if (response.cancelationReason === "UserClosed") {
+                else if (response.cancelationReason === FormCancelationReason.UserClosed) {
                     this.cancelationCallbacks.get("UserClosed")!.forEach(callbackFn => {
                         callbackFn(cancelEvent);
                     });

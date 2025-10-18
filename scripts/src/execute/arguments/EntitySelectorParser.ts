@@ -1,4 +1,4 @@
-import { DimensionTypes, Entity, GameMode, world } from "@minecraft/server";
+import { DimensionTypes, Entity, EntityQueryOptions, GameMode, world } from "@minecraft/server";
 import { MinecraftEntityTypes } from "../../lib/@minecraft/vanilla-data/lib/index";
 import { sentry, TypeModel } from "../../lib/TypeSentry";
 import { ImmutableRegistries, Registries, RegistryKey } from "../../util/Registry";
@@ -56,6 +56,11 @@ const SelectorArgumentInputModel: TypeModel<SelectorArgumentInput> = sentry.obje
     value: sentry.unknown
 });
 
+const SelectorArgumentInputsModel: TypeModel<SelectorArgumentInputs> = sentry.recordOf(
+    sentry.string,
+    sentry.arrayOf(SelectorArgumentInputModel)
+);
+
 interface EntitySelectorArgumentTypeMap {
     readonly c: number;
     readonly dx: number;
@@ -86,23 +91,29 @@ interface EntitySelectorArgumentTypeMap {
 interface HasProperty {}
 
 interface HasItem {
-    readonly item: string;
+    readonly item: [string];
 
-    readonly location?: string;
+    readonly location?: [string];
 
-    readonly slot?: number;
+    readonly slot?: [number];
 
-    readonly quantity?: IntRange;
+    readonly quantity?: IntRange[] | number[];
 
     // 幻
-    readonly data?: number;
+    readonly data?: [number];
 }
 
+const IntRangeModel: TypeModel<IntRange> = sentry.classOf(IntRange);
+
 const HasItemModel: TypeModel<HasItem> = sentry.objectOf({
-    item: sentry.string,
-    location: sentry.optionalOf(sentry.string),
-    slot: sentry.optionalOf(sentry.number.nonNaN().int()),
-    data: sentry.optionalOf(sentry.number.nonNaN().int())
+    item: sentry.tupleOf(sentry.string),
+    location: sentry.optionalOf(sentry.tupleOf(sentry.string)),
+    slot: sentry.optionalOf(sentry.tupleOf(sentry.number.nonNaN().int())),
+    quantity: sentry.optionalOf(sentry.unionOf(
+        sentry.arrayOf(sentry.number.nonNaN().int()),
+        sentry.arrayOf(IntRangeModel)
+    )),
+    data: sentry.optionalOf(sentry.tupleOf(sentry.number.nonNaN().int()))
 }) as TypeModel<HasItem>;
 
 type PermissionState = "enabled" | "disabled";
@@ -152,15 +163,45 @@ const HasPermissionModel: TypeModel<HasPermission> = sentry.objectOf({
 
 interface Scores {}
 
+class SelectorArguments {
+    public constructor(private readonly argumentInputs: SelectorArgumentInputs) {
+
+    }
+
+    public get<K extends keyof EntitySelectorArgumentTypeMap>(key: K): ({ readonly isInverted: boolean; readonly value: EntitySelectorArgumentTypeMap[K] })[] | undefined {
+        if (!(key in this.argumentInputs)) {
+            return undefined;
+        }
+
+        const input = this.argumentInputs[key] as { readonly isInverted: boolean; readonly value: EntitySelectorArgumentTypeMap[K] }[];
+
+        return input;
+    }
+}
+
+class EntitySelectorInterpretError extends Error {
+
+}
+
+export class EntitySelector {
+    public constructor(public readonly selectorType: SelectorType, public readonly selectorArguments: SelectorArguments) {
+
+    }
+
+    private getEntityQueryOptions() {
+        const entityQueryOptions: EntityQueryOptions = {};
+    }
+}
+
 /**
  * @beta
  */
 export class EntitySelectorParser extends AbstractParser<EntitySelector> {
-    private static readonly ENTITY_SELECTOR_TYPES = RegistryKey.create<string, SelectorType>();
+    public static readonly ENTITY_SELECTOR_TYPES = RegistryKey.create<string, SelectorType>();
 
-    private static readonly ENTITY_SELECTOR_ARGUMENT_TYPES = RegistryKey.create<string, SelectorArgumentType<unknown>>();
+    public static readonly ENTITY_SELECTOR_ARGUMENT_TYPES = RegistryKey.create<string, SelectorArgumentType<unknown>>();
 
-    private static readonly REGISTRIES: ImmutableRegistries = new Registries()
+    public static readonly REGISTRIES: ImmutableRegistries = new Registries()
         .withRegistrar(this.ENTITY_SELECTOR_TYPES, register => {
             register("@s", {
                 aliveOnly: false,
@@ -261,7 +302,16 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
             register("m", {
                 invertible: true,
                 duplicatable: SelectorArgumentDuplicationRule.NEVER,
-                type: sentry.string
+                type: sentry.unionOf(
+                    sentry.literalOf(0),
+                    sentry.literalOf(1),
+                    sentry.literalOf(2),
+                    sentry.literalOf(3),
+                    sentry.literalOf(GameMode.Survival),
+                    sentry.literalOf(GameMode.Creative),
+                    sentry.literalOf(GameMode.Adventure),
+                    sentry.literalOf(GameMode.Spectator)
+                )
             });
             register("name", {
                 invertible: true,
@@ -369,6 +419,26 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
         }
         else if (this.test(true, '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-')) {
             value = this.number(false);
+        }
+        else if (this.next(true, "..")) {
+            const end = this.number(true);
+            value = IntRange.maxOnly(end);
+        }
+        else if (this.test(true, '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-')) {
+            const start = this.number(true);
+
+            if (this.next(true, "..")) {
+                if (this.test(true, '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-')) {
+                    const end = this.number(true);
+                    value = IntRange.minMax(start, end);
+                }
+                else {
+                    value = IntRange.minOnly(start);
+                }
+            }
+            else {
+                value = IntRange.exactValue(start);
+            }
         }
         else if (this.test(true, '{')) {
             value = this.multiMap(['{', '}']);
@@ -492,29 +562,63 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
         serializer.indentationSpaceCount = 1;
         serializer.linebreakable = false;
 
-        for (const [name, input] of Object.entries(inputs)) {
+        for (const [name, list] of Object.entries(inputs)) {
             if (!registry.lookup.has(name)) {
-                throw this.exception("不明なセレクタ引数です: '" + name + "'");
+                throw new EntitySelectorInterpretError("不明なセレクタ引数です: '" + name + "'");
             }
 
             const argumentType = registry.lookup.find(name);
 
-            if (!argumentType.invertible && input.some(i => i.isInverted)) {
-                throw this.exception("セレクタ引数 '" + name + "' は反転できません");
+            if (!argumentType.invertible && list.some(i => i.isInverted)) {
+                throw new EntitySelectorInterpretError("セレクタ引数 '" + name + "' は反転できません");
             }
 
             switch (argumentType.duplicatable) {
                 case SelectorArgumentDuplicationRule.NEVER: {
-                    if (input.length > 1) throw this.exception("セレクタ引数 '" + name + "' はいかなる場合も重複できません");
+                    if (list.length > 1) throw new EntitySelectorInterpretError("セレクタ引数 '" + name + "' はいかなる場合も重複できません");
                     break;
                 }
                 case SelectorArgumentDuplicationRule.INVERTED_ONLY: {
-                    if (input.length > 1 && input.some(i => !i.isInverted)) {
-                        throw this.exception("セレクタ引数 '" + name + "' はすべての入力が反転されたときにのみ重複できます");
+                    if (list.length > 1 && list.some(i => !i.isInverted)) {
+                        throw new EntitySelectorInterpretError("セレクタ引数 '" + name + "' はすべての入力が反転されたときにのみ重複できます");
                     }
                     break;
                 }
                 case SelectorArgumentDuplicationRule.ALWAYS: break;
+            }
+
+            function extract(map: SelectorArgumentInputs) {
+                const newMap: Record<string, unknown[]> = {};
+
+                for (const [k, v] of Object.entries(map)) {
+                    newMap[k] = v.map(v => v.value);
+                }
+
+                console.log(serializer.serialize(newMap));
+
+                return newMap;
+            }
+
+            for (const { value } of list) {
+                if (SelectorArgumentInputsModel.test(value)) {
+                    // 引数の値がMapだったら
+                    const v = extract(value);
+                    if (!argumentType.type.test(v)) {
+                        throw new EntitySelectorInterpretError("セレクタ引数 '" + name + "' (" + argumentType.type.toString() + ") に不適当な値です: " + serializer.serialize(v));
+                    }
+                }
+                else if (sentry.arrayOf(SelectorArgumentInputsModel).test(value)) {
+                    // 引数の値がList<Map>だったら (ex: hasitem=[{...}])
+                    for (const map of value) {
+                        const v = extract(map);
+                        if (!argumentType.type.test(v)) {
+                            throw new EntitySelectorInterpretError("セレクタ引数 '" + name + "' (" + argumentType.type.toString() + ") に不適当な値です: " + serializer.serialize(v));
+                        }
+                    }
+                }
+                else if (!argumentType.type.test(value)) {
+                    throw new EntitySelectorInterpretError("セレクタ引数 '" + name + "' (" + argumentType.type.toString() + ") に不適当な値です: " + serializer.serialize(value));
+                }
             }
         }
 
@@ -529,43 +633,40 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
         s.hidePrototypeOf(Object);
         s.hidePrototypeOf(Array);
         s.hidePrototypeOf(Function);
-        console.log(s.serialize(type));
-        console.log(s.serialize(args));
+        //console.log(s.serialize(type));
+        //console.log(s.serialize(args));
 
-        return {
-            isSingle: false,
-            getEntities(stack) {
-                /**
-                 * 1. EntityQueryOptionsの生成
-                 * 2. ディメンション制限チェックを行う
-                 * 3. 生死判定が可能かを見て全エンティティの配列を取得(getEntities() exclude player concat getPlayers())
-                 * 4. 探索基準位置の取得
-                 * 5. 探索基準位置でソート
-                 * 6. 選択制限の取得
-                 * 7. 選択制限の符号から配列を反転／反転しない
-                 * 8. 選択制限によって配列を切り取り
-                 */
-
-                // DimensionTypes.getAll().flatMap(({ typeId }) => world.getDimension(typeId).getEntities())
-
-                return [];
-            }
-        };
+        return new EntitySelector(type, new SelectorArguments(args));
     }
 
     static {
-        new EntitySelectorParser("@e[type=player,hasitem=[{item=apple,quantity=0}],name=!foo,x=~-0.0]").parse();
+        const a = new EntitySelectorParser("@e[type=player,hasitem=[{item=apple,quantity=0..}],name=!foo,x=~-0.0]").parse();
+        const s = new Serializer();
+        s.hidePrototypeOf(Object);
+        s.hidePrototypeOf(Array);
+        s.hidePrototypeOf(Function);
+        const h = a.selectorArguments.get("hasitem")!![0].value;
+        console.log(s.serialize(h[0].quantity))
     }
 }
 
-export interface EntitySelector {
-    readonly isSingle: boolean;
-
-    getEntities(stack: CommandSourceStack): Entity[];
-}
+/**
+ * 1. EntityQueryOptionsの生成
+ * 2. ディメンション制限チェックを行う
+ * 3. 生死判定が可能かを見て全エンティティの配列を取得(getEntities() exclude player concat getPlayers())
+ * 4. 探索基準位置の取得
+ * 5. 探索基準位置でソート
+ * 6. 選択制限の取得
+ * 7. 選択制限の符号から配列を反転／反転しない
+ * 8. 選択制限によって配列を切り取り
+ * 
+ * 問題は 1 の細分化
+ */
 
 /**
  * TODO
+ * number()とRangeParseの競合解決
+ * haspermissionとかをhasitemに合わせて整形
  * scoresの定義
  * has_propertyの定義
  * EntitySelector生成の実装

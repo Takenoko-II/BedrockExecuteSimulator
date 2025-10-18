@@ -1,6 +1,6 @@
 {
     "include": ["scripts/src/"],
-    "exclude": ["scripts/src/lib/"],
+    "exclude": ["scripts/src/lib/@minecraft"],
     "compilerOptions": {
       "allowJs": true,
         "checkJs": true,
