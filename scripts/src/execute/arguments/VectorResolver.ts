@@ -1,5 +1,6 @@
 import { CommandSourceStack } from "../CommandSourceStack";
 import { DualAxisRotationBuilder, TripleAxisRotationBuilder, Vector3Builder } from "../../util/Vector";
+import { sentry, TypeModel } from "../../lib/TypeSentry";
 
 type VectorComponentType = "absolute" | "relative" | "local";
 
@@ -8,6 +9,15 @@ export interface VectorComponent {
 
     readonly value: number;
 }
+
+export const VectorComponentModel: TypeModel<VectorComponent> = sentry.objectOf({
+    type: sentry.unionOf(
+        sentry.literalOf("absolute"),
+        sentry.literalOf("relative"),
+        sentry.literalOf("local")
+    ),
+    value: sentry.number
+});
 
 export class PositionVectorResolver {
     private readonly x: VectorComponent;
