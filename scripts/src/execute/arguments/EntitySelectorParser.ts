@@ -1,10 +1,10 @@
-import { DimensionTypes, Entity, EntityQueryOptions, EntityQueryScoreOptions, GameMode, world } from "@minecraft/server";
+import { Dimension, DimensionTypes, Entity, EntityQueryOptions, EntityQueryPropertyOptions, EntityQueryScoreOptions, GameMode, InputPermissionCategory, Player, world } from "@minecraft/server";
 import { MinecraftEntityTypes } from "../../lib/@minecraft/vanilla-data/lib/index";
 import { sentry, TypeModel } from "../../lib/TypeSentry";
 import { ImmutableRegistries, Registries, RegistryKey } from "../../util/Registry";
 import { Serializer } from "../../util/Serializable";
 import { AbstractParser } from "./AbstractParser";
-import { VectorComponent, VectorComponentModel } from "./VectorResolver";
+import { PositionVectorResolver, VectorComponent, VectorComponentModel } from "./VectorResolver";
 import { IntRange } from "../../util/NumberRange";
 import { CommandSourceStack } from "../CommandSourceStack";
 
@@ -16,8 +16,14 @@ interface SelectorType {
     readonly default?: SelectorDefaultParameters;
 }
 
+interface TypeSpecific {
+    readonly type: MinecraftEntityTypes;
+
+    readonly overridable: boolean;
+}
+
 interface SelectorDefaultParameters {
-    readonly typeSpecific?: MinecraftEntityTypes;
+    readonly typeSpecific?: TypeSpecific;
 
     readonly limit?: number;
 
@@ -56,12 +62,7 @@ function invertibleValueOf<T>(t: TypeModel<T>) :TypeModel<InvertibleValue<T>> {
         isInverted: sentry.boolean,
         value: t
     });
-} 
-
-const SelectorArgumentInputsModel: TypeModel<SelectorArgumentInputs> = sentry.recordOf(
-    sentry.string,
-    sentry.arrayOf(invertibleValueOf(sentry.unknown))
-);
+}
 
 interface EntitySelectorArgumentTypeMap {
     readonly c: number;
@@ -90,7 +91,9 @@ interface EntitySelectorArgumentTypeMap {
     readonly z: VectorComponent;
 }
 
-interface HasProperty {}
+type HasProperty = Record<string, InvertibleValue<boolean>[]> & {
+    readonly property?: InvertibleValue<string>[];
+}
 
 interface HasItem {
     // BEのサブセレクタ引数の入力はつねに重複を許可する
@@ -260,6 +263,24 @@ const HasPermissionModel: TypeModel<HasPermission> = sentry.objectOf({
     )
 }) as TypeModel<HasPermission>;
 
+type PermissionNameInputCategoryMap = {
+    readonly [K in (keyof HasPermission)[][number]]: InputPermissionCategory;
+}
+
+const PERMISSION_NAME_INPUT_PERMISSION_CATEGORY_MAP: PermissionNameInputCategoryMap = {
+    camera: InputPermissionCategory.Camera,
+    dismount: InputPermissionCategory.Dismount,
+    jump: InputPermissionCategory.Jump,
+    lateral_movement: InputPermissionCategory.LateralMovement,
+    mount: InputPermissionCategory.Mount,
+    move_backward: InputPermissionCategory.MoveBackward,
+    move_forward: InputPermissionCategory.MoveForward,
+    move_left: InputPermissionCategory.MoveLeft,
+    move_right: InputPermissionCategory.MoveRight,
+    movement: InputPermissionCategory.Movement,
+    sneak: InputPermissionCategory.Sneak
+};
+
 type Scores = Record<string, InvertibleValue<number | IntRange>[]>;
 
 const ScoresModel: TypeModel<Scores> = sentry.recordOf(
@@ -301,30 +322,20 @@ class SelectorArguments {
     public hasAny<K extends keyof EntitySelectorArgumentTypeMap>(...keys: K[]): boolean {
         return keys.some(k => k in this.argumentInputs);
     }
-}
 
-class EntitySelectorInterpretError extends Error {
-
-}
-
-export class EntitySelector {
-    public constructor(public readonly selectorType: SelectorType, public readonly selectorArguments: SelectorArguments) {
-
-    }
-
-    private getQueryOptionsBase(): EntityQueryOptions {
+    public getQueryOptionsBase(): EntityQueryOptions {
         const entityQueryOptions: EntityQueryOptions = {};
 
-        if (this.selectorArguments.hasAny("dx", "dy", "dz")) {
+        if (this.hasAny("dx", "dy", "dz")) {
             entityQueryOptions.volume = {
-                x: this.selectorArguments.getAsDirectValue("dx") ?? 0,
-                y: this.selectorArguments.getAsDirectValue("dy") ?? 0,
-                z: this.selectorArguments.getAsDirectValue("dz") ?? 0
+                x: this.getAsDirectValue("dx") ?? 0,
+                y: this.getAsDirectValue("dy") ?? 0,
+                z: this.getAsDirectValue("dz") ?? 0
             };
         }
 
-        if (this.selectorArguments.hasAny("family")) {
-            const families = this.selectorArguments.getAsInvertibleList("family")!!;
+        if (this.hasAny("family")) {
+            const families = this.getAsInvertibleList("family")!!;
             const include: string[] = [];
             const exclude: string[] = [];
 
@@ -341,20 +352,57 @@ export class EntitySelector {
             entityQueryOptions.excludeFamilies = exclude;
         }
 
-        // has_property
-        // readonly hasitem
-        // readonly haspermission
+        if (this.hasAny("has_property")) {
+            const propertyOptionsList: EntityQueryPropertyOptions[] = [];
+            const properties = this.getAsDirectValue("has_property")!;
 
-        if (this.selectorArguments.hasAny("l")) {
-            entityQueryOptions.maxLevel = this.selectorArguments.getAsDirectValue("l")!!;
+            if (Object.keys(properties).length === 0) {
+                throw new EntitySelectorInterpretError("セレクタ引数 'has_property' は空のMapを受け取りません");
+            }
+
+            for (const [identifier, propertyNamesOrFlags] of Object.entries(properties)) {
+                if (identifier === "property") {
+                    const propertyOptions: EntityQueryPropertyOptions = {
+                        propertyId: identifier
+                    };
+
+                    const propertyNames = propertyNamesOrFlags as InvertibleValue<string>[];
+                    const effectiveEntry = propertyNames[propertyNames.length - 1];
+
+                    propertyOptions.exclude = effectiveEntry.isInverted;
+                    propertyOptions.value = effectiveEntry.value;
+                    propertyOptionsList.push(propertyOptions);
+                }
+                else {
+                    const flags = propertyNamesOrFlags as InvertibleValue<boolean>[];
+                    
+                    for (const flag of flags) {
+                        const propertyOptions: EntityQueryPropertyOptions = {
+                            propertyId: identifier
+                        };
+
+                        propertyOptions.exclude = flag.isInverted;
+                        propertyOptions.value = flag.value;
+                        propertyOptionsList.push(propertyOptions);
+                    }
+                }
+            }
+
+            entityQueryOptions.propertyOptions = propertyOptionsList;
         }
 
-        if (this.selectorArguments.hasAny("lm")) {
-            entityQueryOptions.minLevel = this.selectorArguments.getAsDirectValue("lm")!!;
+        // entityQueryOptionsにhasitemがない！！！！！！！！！！！！！！！！！！！！！！！
+
+        if (this.hasAny("l")) {
+            entityQueryOptions.maxLevel = this.getAsDirectValue("l")!!;
         }
 
-        if (this.selectorArguments.hasAny("m")) {
-            const m = this.selectorArguments.getAsInvertibleValue("m")!!;
+        if (this.hasAny("lm")) {
+            entityQueryOptions.minLevel = this.getAsDirectValue("lm")!!;
+        }
+
+        if (this.hasAny("m")) {
+            const m = this.getAsInvertibleValue("m")!!;
 
             if (m.isInverted) {
                 entityQueryOptions.excludeGameModes = [m.value];
@@ -364,10 +412,10 @@ export class EntitySelector {
             }
         }
 
-        if (this.selectorArguments.hasAny("name")) {
+        if (this.hasAny("name")) {
             const exclude: string[] = [];
 
-            for (const name of this.selectorArguments.getAsInvertibleList("name")!!) {
+            for (const name of this.getAsInvertibleList("name")!!) {
                 if (name.isInverted) {
                     exclude.push(name.value);
                 }
@@ -380,51 +428,73 @@ export class EntitySelector {
             entityQueryOptions.excludeNames = exclude;
         }
 
-        if (this.selectorArguments.hasAny("r")) {
-            entityQueryOptions.maxDistance = this.selectorArguments.getAsDirectValue("r")!!;
+        if (this.hasAny("r")) {
+            entityQueryOptions.maxDistance = this.getAsDirectValue("r")!!;
         }
 
-        if (this.selectorArguments.hasAny("rm")) {
-            entityQueryOptions.minDistance = this.selectorArguments.getAsDirectValue("rm")!!;
+        if (this.hasAny("rm")) {
+            entityQueryOptions.minDistance = this.getAsDirectValue("rm")!!;
         }
 
-        if (this.selectorArguments.hasAny("rx")) {
-            entityQueryOptions.maxVerticalRotation = this.selectorArguments.getAsDirectValue("rx")!!;
+        if (this.hasAny("rx")) {
+            entityQueryOptions.maxVerticalRotation = this.getAsDirectValue("rx")!!;
         }
 
-        if (this.selectorArguments.hasAny("rxm")) {
-            entityQueryOptions.minVerticalRotation = this.selectorArguments.getAsDirectValue("rxm")!!;
+        if (this.hasAny("rxm")) {
+            entityQueryOptions.minVerticalRotation = this.getAsDirectValue("rxm")!!;
         }
 
-        if (this.selectorArguments.hasAny("ry")) {
-            entityQueryOptions.maxHorizontalRotation = this.selectorArguments.getAsDirectValue("ry")!!;
+        if (this.hasAny("ry")) {
+            entityQueryOptions.maxHorizontalRotation = this.getAsDirectValue("ry")!!;
         }
 
-        if (this.selectorArguments.hasAny("rym")) {
-            entityQueryOptions.minHorizontalRotation = this.selectorArguments.getAsDirectValue("rym")!!;
+        if (this.hasAny("rym")) {
+            entityQueryOptions.minHorizontalRotation = this.getAsDirectValue("rym")!!;
         }
 
-        if (this.selectorArguments.hasAny("scores")) {
+        if (this.hasAny("scores")) {
             const scoreOptionsList: EntityQueryScoreOptions[] = [];
-            const scores = this.selectorArguments.getAsDirectValue("scores")!!;
+            const scores = this.getAsDirectValue("scores")!!;
+
+            if (Object.keys(scores).length === 0) {
+                throw new EntitySelectorInterpretError("セレクタ引数 'scores' は空のMapを受け取りません");
+            }
 
             for (const [name, score] of Object.entries(scores)) {
-                const scoreOptions: EntityQueryScoreOptions = {};
-                scoreOptions.objective = name;
-                
                 for (const cond of score) {
+                    const scoreOptions: EntityQueryScoreOptions = {};
+                    scoreOptions.objective = name;
+
                     if (cond.isInverted) {
-                        // scoreOptions.exclude
+                        scoreOptions.exclude = true;
                     }
+
+                    if (cond.value instanceof IntRange) {
+                        if (cond.value.getMin() !== Number.MIN_SAFE_INTEGER) {
+                            scoreOptions.minScore = cond.value.getMin();
+                        }
+
+                        if (cond.value.getMax() !== Number.MAX_SAFE_INTEGER) {
+                            scoreOptions.maxScore = cond.value.getMax();
+                        }
+                    }
+                    else {
+                        scoreOptions.minScore = cond.value;
+                        scoreOptions.maxScore = cond.value;
+                    }
+
+                    scoreOptionsList.push(scoreOptions);
                 }
             }
+
+            entityQueryOptions.scoreOptions = scoreOptionsList;
         }
 
-        if (this.selectorArguments.hasAny("tag")) {
+        if (this.hasAny("tag")) {
             const include: string[] = [];
             const exclude: string[] = [];
 
-            for (const tag of this.selectorArguments.getAsInvertibleList("tag")!!) {
+            for (const tag of this.getAsInvertibleList("tag")!!) {
                 if (tag.isInverted) {
                     exclude.push(tag.value);
                 }
@@ -437,10 +507,10 @@ export class EntitySelector {
             entityQueryOptions.excludeTags = exclude;
         }
 
-        if (this.selectorArguments.hasAny("type")) {
+        if (this.hasAny("type")) {
             const exclude: string[] = [];
 
-            for (const type of this.selectorArguments.getAsInvertibleList("type")!!) {
+            for (const type of this.getAsInvertibleList("type")!!) {
                 if (type.isInverted) {
                     exclude.push(type.value);
                 }
@@ -453,13 +523,180 @@ export class EntitySelector {
             entityQueryOptions.excludeTypes = exclude;
         }
 
-        // x, y, z
-
         return entityQueryOptions;
+    }
+
+    public getPositionVectorResolver(): PositionVectorResolver {
+        let x: VectorComponent = {
+            type: "relative",
+            value: 0
+        };
+
+        let y: VectorComponent = {
+            type: "relative",
+            value: 0
+        };
+
+        let z: VectorComponent = {
+            type: "relative",
+            value: 0
+        };
+
+        if (this.hasAny("x")) {
+            x = this.getAsDirectValue("x")!
+        }
+
+        if (this.hasAny("y")) {
+            y = this.getAsDirectValue("y")!
+        }
+
+        if (this.hasAny("z")) {
+            z = this.getAsDirectValue("z")!
+        }
+
+        return new PositionVectorResolver(x, y, z);
+    }
+}
+
+class EntitySelectorInterpretError extends Error {}
+
+class EntitySelector {
+    public readonly isSingle: boolean;
+
+    private readonly entityQueryOptionsBase: EntityQueryOptions;
+
+    private readonly positionVectorResolver: PositionVectorResolver;
+
+    public constructor(public readonly selectorType: SelectorType, public readonly selectorArguments: SelectorArguments) {
+        this.entityQueryOptionsBase = selectorArguments.getQueryOptionsBase();
+        this.positionVectorResolver = selectorArguments.getPositionVectorResolver();
+
+        const c = selectorArguments.getAsDirectValue("c");
+        if (selectorType.default?.limit === 1) {
+            this.isSingle = c === undefined || c === 1 || c === -1;
+        }
+        else {
+            this.isSingle = c === 1 || c === -1;
+        }
+    }
+
+    private hasPermission(entities: Entity[]): Entity[] {
+        if (this.selectorArguments.hasAny("haspermission")) {
+            // haspermission=が指定された時点でプレイヤーのみに絞られる
+            const permissions = this.selectorArguments.getAsDirectValue("haspermission")!;
+
+            if (Object.keys(permissions).length === 0) {
+                throw new EntitySelectorInterpretError("セレクタ引数 'haspermission' は空のMapを受け取りません");
+            }
+
+            return entities.filter(entity => {
+                if (entity instanceof Player) {
+                    for (const __name__ of Object.keys(permissions)) {
+                        const name = __name__ as keyof HasPermission;
+                        const values = permissions[name as keyof HasPermission]!;
+
+                        const isEnabled = entity.inputPermissions.isPermissionCategoryEnabled(PERMISSION_NAME_INPUT_PERMISSION_CATEGORY_MAP[name]);
+
+                        if (isEnabled && values.some(value => value.value == "disabled")) {
+                            return false;
+                        }
+                        else if (!isEnabled && values.some(value => value.value == "enabled")) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+                else return false;
+            });
+        }
+        else return entities;
+    }
+
+    private hasItem(entities: Entity[]): Entity[] {
+        if (this.selectorArguments.hasAny("hasitem")) {
+            // TODO: hasitem=の実装
+            return entities;
+        }
+        else return entities;
+    }
+
+    public getEntities(stack: CommandSourceStack): Entity[] {
+        const entityQueryOptions = this.entityQueryOptionsBase;
+
+        const basePos = this.positionVectorResolver.resolve(stack);
+        entityQueryOptions.location = basePos;
+
+        let dimensions: Dimension[];
+        if (this.selectorArguments.hasAny("dx", "dy", "dz", "r", "rm")) {
+            dimensions = [stack.getDimension()];
+        }
+        else {
+            dimensions = DimensionTypes.getAll().map(({ typeId }) => world.getDimension(typeId));
+        }
+
+        let entities: Entity[];
+        if (this.selectorType.aliveOnly) {
+            entities = dimensions.flatMap(dimension => dimension.getEntities(entityQueryOptions));
+        }
+        else {
+            entities = dimensions.flatMap(dimension => dimension.getEntities({ ...entityQueryOptions, excludeTypes: [MinecraftEntityTypes.Player] }));
+
+            if (!(entityQueryOptions.excludeTypes?.includes(MinecraftEntityTypes.Player) || entityQueryOptions.excludeTypes?.includes("player"))) {
+                entities.push(...world.getPlayers());
+            }
+        }
+
+        if (this.selectorType.default?.typeSpecific) {
+            if (this.selectorType.default.typeSpecific.overridable) {
+                entities = entities.filter(entity => entity.typeId === this.selectorType.default?.typeSpecific?.type);
+            }
+            else if ((entityQueryOptions.type === undefined && entityQueryOptions.excludeTypes === undefined)) {
+                entities = entities.filter(entity => entity.typeId === this.selectorType.default?.typeSpecific?.type);
+            }
+        }
+
+        entities = this.hasPermission(entities);
+        entities = this.hasItem(entities);
+
+        switch (this.selectorType.sortOrder) {
+            case SelectorSortOrder.NEAREST: {
+                entities.sort((a, b) => {
+                    return basePos.getDistanceTo(a.location) - basePos.getDistanceTo(b.location);
+                });
+                break;
+            }
+            case SelectorSortOrder.RANDOM: {
+                entities.sort(() => {
+                    return Math.random() - Math.random();
+                });
+                break;
+            }
+        }
+
+        if (this.selectorArguments.hasAny("c")) {
+            const c = this.selectorArguments.getAsDirectValue("c")!;
+
+            if (c < 0) {
+                entities.reverse();
+            }
+
+            entities.splice(Math.abs(c));
+        }
+        else if (this.selectorType.default?.limit !== undefined) {
+            entities.splice(this.selectorType.default.limit);
+        }
+
+        if (this.selectorType.default?.processor) {
+            entities = this.selectorType.default.processor(stack, entities);
+        }
+
+        return entities;
     }
 }
 
 /**
+ * 大幅改良版
  * @beta
  */
 export class EntitySelectorParser extends AbstractParser<EntitySelector> {
@@ -484,7 +721,10 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
                 aliveOnly: true,
                 sortOrder: SelectorSortOrder.NEAREST,
                 default: {
-                    typeSpecific: MinecraftEntityTypes.Player,
+                    typeSpecific: {
+                        type: MinecraftEntityTypes.Player,
+                        overridable: false
+                    },
                     limit: 1
                 }
             });
@@ -492,7 +732,10 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
                 aliveOnly: true,
                 sortOrder: SelectorSortOrder.RANDOM,
                 default: {
-                    typeSpecific: MinecraftEntityTypes.Player,
+                    typeSpecific: {
+                        type: MinecraftEntityTypes.Player,
+                        overridable: true
+                    },
                     limit: 1
                 }
             });
@@ -500,7 +743,10 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
                 aliveOnly: false,
                 sortOrder: SelectorSortOrder.NEAREST,
                 default: {
-                    typeSpecific: MinecraftEntityTypes.Player
+                    typeSpecific: {
+                        type: MinecraftEntityTypes.Player,
+                        overridable: false
+                    }
                 }
             });
             register("@e", {
@@ -665,6 +911,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
     protected override getInvalidSymbolsInUnquotedString(): Set<string> {
         const s = super.getInvalidSymbolsInUnquotedString();
         s.delete(':');
+        s.delete('.');
         return s;
     }
 
@@ -854,34 +1101,8 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
                 case SelectorArgumentDuplicationRule.ALWAYS: break;
             }
 
-            function extract(map: SelectorArgumentInputs) {
-                const newMap: Record<string, unknown[]> = {};
-
-                for (const [k, v] of Object.entries(map)) {
-                    newMap[k] = v.map(v => v.value);
-                }
-
-                return newMap;
-            }
-
             for (const { value } of list) {
-                /*if (SelectorArgumentInputsModel.test(value)) {
-                    // 引数の値がMapだったら
-                    const v = extract(value);
-                    if (!argumentType.type.test(v)) {
-                        throw new EntitySelectorInterpretError("セレクタ引数 '" + name + "' (" + argumentType.type.toString() + ") に不適当な値です: " + serializer.serialize(v));
-                    }
-                }
-                else if (sentry.arrayOf(SelectorArgumentInputsModel).test(value)) {
-                    // 引数の値がList<Map>だったら (ex: hasitem=[{...}])
-                    for (const map of value) {
-                        const v = extract(map);
-                        if (!argumentType.type.test(v)) {
-                            throw new EntitySelectorInterpretError("セレクタ引数 '" + name + "' (" + argumentType.type.toString() + ") に不適当な値です: " + serializer.serialize(v));
-                        }
-                    }
-                }
-                else*/ if (!argumentType.type.test(value)) {
+                if (!argumentType.type.test(value)) {
                     throw new EntitySelectorInterpretError("セレクタ引数 '" + name + "' (" + argumentType.type.toString() + ") に不適当な値です: " + serializer.serialize(value));
                 }
             }
@@ -890,43 +1111,24 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
         return inputs;
     }
 
-    public override parse(): EntitySelector {
+    protected override parse(): EntitySelector {
         const type = this.type();
         const args = this.arguments();
         return new EntitySelector(type, new SelectorArguments(args));
     }
 
-    static {
-        const a = new EntitySelectorParser("@e[scores={a=1..2,b=3},type=player,hasitem={item=apple,quantity=3..},name=!foo,x=~-0.0,haspermission={camera=enabled,camera=disabled}]").parse();
-        const s = new Serializer();
-        s.hidePrototypeOf(Object);
-        s.hidePrototypeOf(Array);
-        s.hidePrototypeOf(Function);
-        s.hidePrototypeOf(IntRange);
-        const h = a.selectorArguments.getAsDirectValue("hasitem") as HasItem
-        console.log(s.serialize(a.selectorArguments["argumentInputs"]))
+    public static readSelector(selector: string): EntitySelector {
+        return new EntitySelectorParser(selector).parse();
     }
 }
 
 /**
  * 1. EntityQueryOptionsの生成
  * 2. ディメンション制限チェックを行う
- * 3. 生死判定が可能かを見て全エンティティの配列を取得(getEntities() exclude player concat getPlayers())
- * 4. 探索基準位置の取得
- * 5. 探索基準位置でソート
+ * 3. 探索基準位置の取得
+ * 4. 生死判定が可能かを見て全エンティティの配列を取得(getEntities() exclude player concat getPlayers())
+ * 5. 探索基準位置(プレイヤーをあとからconcatするため)とセレクタソートオーダーでソート
  * 6. 選択制限の取得
  * 7. 選択制限の符号から配列を反転／反転しない
  * 8. 選択制限によって配列を切り取り
- * 
- * 問題は 1 の細分化
  */
-
-/**
- * TODO
- * number()とRangeParseの競合解決
- * haspermissionとかをhasitemに合わせて整形
- * scoresの定義
- * has_propertyの定義
- * EntitySelector生成の実装
- */
-
