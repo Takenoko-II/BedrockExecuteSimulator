@@ -19,6 +19,14 @@ export abstract class AbstractParser<T> {
         return this.text.charAt(this.cursor);
     }
 
+    private peekFar(offset: number): string | undefined {
+        if (this.cursor + offset >= this.text.length) {
+            return undefined;
+        }
+
+        return this.text.charAt(this.cursor + offset);
+    }
+
     private nextChar(): void {
         if (this.isOver()) {
             throw this.exception("next() の実行に失敗しました: isOver");
@@ -140,7 +148,7 @@ export abstract class AbstractParser<T> {
                 sb += current;
                 intAppeared = true;
             }
-            else if (current == DECIMAL_POINT && intAppeared && !pointAppeared) {
+            else if (current === DECIMAL_POINT && intAppeared && !pointAppeared && this.peekFar(1) !== DECIMAL_POINT) {
                 sb += current;
                 pointAppeared = true;
             }

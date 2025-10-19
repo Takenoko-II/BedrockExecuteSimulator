@@ -192,14 +192,10 @@ export class FacingEntity extends ForkableSubCommand {
             entityAnchor.write(entity);
             entityAnchor.write(this.anchorType);
 
-            console.log(stack.clone());
-
             return stack.clone(css => {
                 const to = Vector3Builder.from(entity.location).add(entityAnchor.getOffset());
                 const dir = css.getPosition().getDirectionTo(to);
-                console.log("p:",css.getPosition())
                 css.write(dir.getRotation2d());
-                console.log("q:",css.getPosition())
             });
         });
     }

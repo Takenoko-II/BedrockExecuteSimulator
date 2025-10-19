@@ -117,8 +117,6 @@ export class CommandSourceStack {
     public write(entityAnchorType: AnchorType): void;
 
     public write(value: Entity | Position | Vector2 | DimensionType | AnchorType): void {
-        // console.log(Object.keys(value), isPosition(value));
-
         if (value instanceof Entity) {
             this.executor = value;
         }

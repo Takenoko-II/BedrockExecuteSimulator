@@ -1,6 +1,7 @@
-import { world } from "@minecraft/server";
+import { EntityInitializationCause, Player, PlayerPlaceBlockAfterEvent, world, WorldAfterEvents } from "@minecraft/server";
 import { Execute } from "./execute/Execute";
 import { EntitySelectorParser } from "./execute/arguments/EntitySelectorParser";
+import { DualAxisRotationBuilder, Vector3Builder } from "./util/Vector";
 
 world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) => {
     const execute: Execute = new Execute();

@@ -1,4 +1,4 @@
-import { DimensionTypes, Entity, EntityQueryOptions, GameMode, world } from "@minecraft/server";
+import { DimensionTypes, Entity, EntityQueryOptions, EntityQueryScoreOptions, GameMode, world } from "@minecraft/server";
 import { MinecraftEntityTypes } from "../../lib/@minecraft/vanilla-data/lib/index";
 import { sentry, TypeModel } from "../../lib/TypeSentry";
 import { ImmutableRegistries, Registries, RegistryKey } from "../../util/Registry";
@@ -43,22 +43,24 @@ export enum SelectorSortOrder {
     RANDOM = "RANDOM"
 }
 
-type SelectorArgumentInputs = Record<string, SelectorArgumentInput[]>;
+type SelectorArgumentInputs = Record<string, InvertibleValue[]>;
 
-interface SelectorArgumentInput {
+interface InvertibleValue<T = unknown> {
     readonly isInverted: boolean;
 
-    readonly value: unknown;
+    readonly value: T;
 }
 
-const SelectorArgumentInputModel: TypeModel<SelectorArgumentInput> = sentry.objectOf({
-    isInverted: sentry.boolean,
-    value: sentry.unknown
-});
+function invertibleValueOf<T>(t: TypeModel<T>) :TypeModel<InvertibleValue<T>> {
+    return sentry.objectOf({
+        isInverted: sentry.boolean,
+        value: t
+    });
+} 
 
 const SelectorArgumentInputsModel: TypeModel<SelectorArgumentInputs> = sentry.recordOf(
     sentry.string,
-    sentry.arrayOf(SelectorArgumentInputModel)
+    sentry.arrayOf(invertibleValueOf(sentry.unknown))
 );
 
 interface EntitySelectorArgumentTypeMap {
@@ -68,7 +70,7 @@ interface EntitySelectorArgumentTypeMap {
     readonly dz: number;
     readonly family: string;
     readonly has_property: HasProperty;
-    readonly hasitem: HasItem[];
+    readonly hasitem: HasItem | HasItem[];
     readonly haspermission: HasPermission;
     readonly l: number;
     readonly lm: number;
@@ -91,55 +93,86 @@ interface EntitySelectorArgumentTypeMap {
 interface HasProperty {}
 
 interface HasItem {
-    readonly item: [string];
+    // BEのサブセレクタ引数の入力はつねに重複を許可する
+    readonly item: InvertibleValue<string>[];
 
-    readonly location?: [string];
+    readonly location?: InvertibleValue<string>[];
 
-    readonly slot?: [number];
+    readonly slot?: InvertibleValue<number>[];
 
-    readonly quantity?: IntRange[] | number[];
+    readonly quantity?: InvertibleValue<IntRange | number>[];
 
     // 幻
-    readonly data?: [number];
+    readonly data?: InvertibleValue<number>[];
 }
 
 const IntRangeModel: TypeModel<IntRange> = sentry.classOf(IntRange);
 
 const HasItemModel: TypeModel<HasItem> = sentry.objectOf({
-    item: sentry.tupleOf(sentry.string),
-    location: sentry.optionalOf(sentry.tupleOf(sentry.string)),
-    slot: sentry.optionalOf(sentry.tupleOf(sentry.number.nonNaN().int())),
-    quantity: sentry.optionalOf(sentry.unionOf(
-        sentry.arrayOf(sentry.number.nonNaN().int()),
-        sentry.arrayOf(IntRangeModel)
-    )),
-    data: sentry.optionalOf(sentry.tupleOf(sentry.number.nonNaN().int()))
+    item: sentry.arrayOf(
+        invertibleValueOf(
+            sentry.string
+        )
+    ),
+    location: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                sentry.string
+            )
+        )
+    ),
+    slot: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                sentry.number.nonNaN().int()
+            )
+        )
+    ),
+    quantity: sentry.optionalOf(
+        sentry.arrayOf(
+            sentry.unionOf(
+                invertibleValueOf(
+                    sentry.number.nonNaN().int()
+                ),
+                invertibleValueOf(
+                    IntRangeModel
+                )
+            )
+        )
+    ),
+    data: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                sentry.number.nonNaN().int()
+            )
+        )
+    )
 }) as TypeModel<HasItem>;
 
 type PermissionState = "enabled" | "disabled";
 
 interface HasPermission {
-    readonly camera: PermissionState;
+    readonly camera?: InvertibleValue<PermissionState>[];
 
-    readonly dismount: PermissionState;
+    readonly dismount?: InvertibleValue<PermissionState>[];
 
-    readonly jump: PermissionState;
+    readonly jump?: InvertibleValue<PermissionState>[];
 
-    readonly lateral_movement: PermissionState;
+    readonly lateral_movement?: InvertibleValue<PermissionState>[];
 
-    readonly mount: PermissionState;
+    readonly mount?: InvertibleValue<PermissionState>[];
 
-    readonly move_backward: PermissionState;
+    readonly move_backward?: InvertibleValue<PermissionState>[];
 
-    readonly move_forward: PermissionState;
+    readonly move_forward?: InvertibleValue<PermissionState>[];
 
-    readonly move_left: PermissionState;
+    readonly move_left?: InvertibleValue<PermissionState>[];
 
-    readonly move_right: PermissionState;
+    readonly move_right?: InvertibleValue<PermissionState>[];
 
-    readonly movement: PermissionState;
+    readonly movement?: InvertibleValue<PermissionState>[];
 
-    readonly sneak: PermissionState;
+    readonly sneak?: InvertibleValue<PermissionState>[];
 }
 
 const PermissionStateModel = sentry.unionOf(
@@ -148,34 +181,125 @@ const PermissionStateModel = sentry.unionOf(
 );
 
 const HasPermissionModel: TypeModel<HasPermission> = sentry.objectOf({
-    camera: PermissionStateModel,
-    dismount: PermissionStateModel,
-    jump: PermissionStateModel,
-    lateral_movement: PermissionStateModel,
-    mount: PermissionStateModel,
-    move_backward: PermissionStateModel,
-    move_forward: PermissionStateModel,
-    move_left: PermissionStateModel,
-    move_right: PermissionStateModel,
-    movement: PermissionStateModel,
-    sneak: PermissionStateModel
-});
+    camera: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                PermissionStateModel
+            )
+        )
+    ),
+    dismount: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                PermissionStateModel
+            )
+        )
+    ),
+    jump: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                PermissionStateModel
+            )
+        )
+    ),
+    lateral_movement: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                PermissionStateModel
+            )
+        )
+    ),
+    mount: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                PermissionStateModel
+            )
+        )
+    ),
+    move_backward: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                PermissionStateModel
+            )
+        )
+    ),
+    move_forward: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                PermissionStateModel
+            )
+        )
+    ),
+    move_left: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                PermissionStateModel
+            )
+        )
+    ),
+    move_right: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                PermissionStateModel
+            )
+        )
+    ),
+    movement: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                PermissionStateModel
+            )
+        )
+    ),
+    sneak: sentry.optionalOf(
+        sentry.arrayOf(
+            invertibleValueOf(
+                PermissionStateModel
+            )
+        )
+    )
+}) as TypeModel<HasPermission>;
 
-interface Scores {}
+type Scores = Record<string, InvertibleValue<number | IntRange>[]>;
+
+const ScoresModel: TypeModel<Scores> = sentry.recordOf(
+    sentry.string,
+    sentry.arrayOf(
+            invertibleValueOf(
+            sentry.unionOf(
+                sentry.number,
+                IntRangeModel
+            )
+        )
+    )
+);
 
 class SelectorArguments {
-    public constructor(private readonly argumentInputs: SelectorArgumentInputs) {
+    public constructor(private readonly argumentInputs: SelectorArgumentInputs) {}
 
-    }
-
-    public get<K extends keyof EntitySelectorArgumentTypeMap>(key: K): ({ readonly isInverted: boolean; readonly value: EntitySelectorArgumentTypeMap[K] })[] | undefined {
+    public getAsInvertibleList<K extends keyof EntitySelectorArgumentTypeMap>(key: K): ({ readonly isInverted: boolean; readonly value: EntitySelectorArgumentTypeMap[K] })[] | undefined {
         if (!(key in this.argumentInputs)) {
             return undefined;
         }
 
-        const input = this.argumentInputs[key] as { readonly isInverted: boolean; readonly value: EntitySelectorArgumentTypeMap[K] }[];
+        const input = this.argumentInputs[key] as {
+            readonly isInverted: boolean;
+            readonly value: EntitySelectorArgumentTypeMap[K]
+        }[];
 
         return input;
+    }
+
+    public getAsInvertibleValue<K extends keyof EntitySelectorArgumentTypeMap>(key: K): { readonly isInverted: boolean; readonly value: EntitySelectorArgumentTypeMap[K] } | undefined {
+        return this.getAsInvertibleList(key)?.[0];
+    }
+
+    public getAsDirectValue<K extends keyof EntitySelectorArgumentTypeMap>(key: K): EntitySelectorArgumentTypeMap[K] | undefined {
+        return this.getAsInvertibleValue(key)?.value;
+    }
+
+    public hasAny<K extends keyof EntitySelectorArgumentTypeMap>(...keys: K[]): boolean {
+        return keys.some(k => k in this.argumentInputs);
     }
 }
 
@@ -188,8 +312,150 @@ export class EntitySelector {
 
     }
 
-    private getEntityQueryOptions() {
+    private getQueryOptionsBase(): EntityQueryOptions {
         const entityQueryOptions: EntityQueryOptions = {};
+
+        if (this.selectorArguments.hasAny("dx", "dy", "dz")) {
+            entityQueryOptions.volume = {
+                x: this.selectorArguments.getAsDirectValue("dx") ?? 0,
+                y: this.selectorArguments.getAsDirectValue("dy") ?? 0,
+                z: this.selectorArguments.getAsDirectValue("dz") ?? 0
+            };
+        }
+
+        if (this.selectorArguments.hasAny("family")) {
+            const families = this.selectorArguments.getAsInvertibleList("family")!!;
+            const include: string[] = [];
+            const exclude: string[] = [];
+
+            for (const family of families) {
+                if (family.isInverted) {
+                    exclude.push(family.value);
+                }
+                else {
+                    include.push(family.value);
+                }
+            }
+
+            entityQueryOptions.families = include;
+            entityQueryOptions.excludeFamilies = exclude;
+        }
+
+        // has_property
+        // readonly hasitem
+        // readonly haspermission
+
+        if (this.selectorArguments.hasAny("l")) {
+            entityQueryOptions.maxLevel = this.selectorArguments.getAsDirectValue("l")!!;
+        }
+
+        if (this.selectorArguments.hasAny("lm")) {
+            entityQueryOptions.minLevel = this.selectorArguments.getAsDirectValue("lm")!!;
+        }
+
+        if (this.selectorArguments.hasAny("m")) {
+            const m = this.selectorArguments.getAsInvertibleValue("m")!!;
+
+            if (m.isInverted) {
+                entityQueryOptions.excludeGameModes = [m.value];
+            }
+            else {
+                entityQueryOptions.gameMode = m.value;
+            }
+        }
+
+        if (this.selectorArguments.hasAny("name")) {
+            const exclude: string[] = [];
+
+            for (const name of this.selectorArguments.getAsInvertibleList("name")!!) {
+                if (name.isInverted) {
+                    exclude.push(name.value);
+                }
+                else {
+                    entityQueryOptions.name = name.value;
+                    break;
+                }
+            }
+
+            entityQueryOptions.excludeNames = exclude;
+        }
+
+        if (this.selectorArguments.hasAny("r")) {
+            entityQueryOptions.maxDistance = this.selectorArguments.getAsDirectValue("r")!!;
+        }
+
+        if (this.selectorArguments.hasAny("rm")) {
+            entityQueryOptions.minDistance = this.selectorArguments.getAsDirectValue("rm")!!;
+        }
+
+        if (this.selectorArguments.hasAny("rx")) {
+            entityQueryOptions.maxVerticalRotation = this.selectorArguments.getAsDirectValue("rx")!!;
+        }
+
+        if (this.selectorArguments.hasAny("rxm")) {
+            entityQueryOptions.minVerticalRotation = this.selectorArguments.getAsDirectValue("rxm")!!;
+        }
+
+        if (this.selectorArguments.hasAny("ry")) {
+            entityQueryOptions.maxHorizontalRotation = this.selectorArguments.getAsDirectValue("ry")!!;
+        }
+
+        if (this.selectorArguments.hasAny("rym")) {
+            entityQueryOptions.minHorizontalRotation = this.selectorArguments.getAsDirectValue("rym")!!;
+        }
+
+        if (this.selectorArguments.hasAny("scores")) {
+            const scoreOptionsList: EntityQueryScoreOptions[] = [];
+            const scores = this.selectorArguments.getAsDirectValue("scores")!!;
+
+            for (const [name, score] of Object.entries(scores)) {
+                const scoreOptions: EntityQueryScoreOptions = {};
+                scoreOptions.objective = name;
+                
+                for (const cond of score) {
+                    if (cond.isInverted) {
+                        // scoreOptions.exclude
+                    }
+                }
+            }
+        }
+
+        if (this.selectorArguments.hasAny("tag")) {
+            const include: string[] = [];
+            const exclude: string[] = [];
+
+            for (const tag of this.selectorArguments.getAsInvertibleList("tag")!!) {
+                if (tag.isInverted) {
+                    exclude.push(tag.value);
+                }
+                else {
+                    include.push(tag.value);
+                }
+            }
+
+            entityQueryOptions.tags = include;
+            entityQueryOptions.excludeTags = exclude;
+        }
+
+        if (this.selectorArguments.hasAny("type")) {
+            const exclude: string[] = [];
+
+            for (const type of this.selectorArguments.getAsInvertibleList("type")!!) {
+                if (type.isInverted) {
+                    exclude.push(type.value);
+                }
+                else {
+                    entityQueryOptions.type = type.value;
+                    break;
+                }
+            }
+
+            entityQueryOptions.excludeTypes = exclude;
+        }
+
+        // x, y, z
+
+        return entityQueryOptions;
     }
 }
 
@@ -348,7 +614,11 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
                 duplicatable: SelectorArgumentDuplicationRule.NEVER,
                 type: sentry.number
             });
-            // scores RecordModelがTypeSentryにない！！！！！！！！
+            register("scores", {
+                invertible: false,
+                duplicatable: SelectorArgumentDuplicationRule.NEVER,
+                type: ScoresModel
+            });
             register("tag", {
                 invertible: true,
                 duplicatable: SelectorArgumentDuplicationRule.ALWAYS,
@@ -417,9 +687,6 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
         if (this.test(true, this.getTrue(), this.getFalse())) {
             value = this.bool();
         }
-        else if (this.test(true, '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-')) {
-            value = this.number(false);
-        }
         else if (this.next(true, "..")) {
             const end = this.number(true);
             value = IntRange.maxOnly(end);
@@ -437,7 +704,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
                 }
             }
             else {
-                value = IntRange.exactValue(start);
+                value = start;
             }
         }
         else if (this.test(true, '{')) {
@@ -594,13 +861,11 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
                     newMap[k] = v.map(v => v.value);
                 }
 
-                console.log(serializer.serialize(newMap));
-
                 return newMap;
             }
 
             for (const { value } of list) {
-                if (SelectorArgumentInputsModel.test(value)) {
+                /*if (SelectorArgumentInputsModel.test(value)) {
                     // 引数の値がMapだったら
                     const v = extract(value);
                     if (!argumentType.type.test(v)) {
@@ -616,7 +881,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
                         }
                     }
                 }
-                else if (!argumentType.type.test(value)) {
+                else*/ if (!argumentType.type.test(value)) {
                     throw new EntitySelectorInterpretError("セレクタ引数 '" + name + "' (" + argumentType.type.toString() + ") に不適当な値です: " + serializer.serialize(value));
                 }
             }
@@ -628,25 +893,18 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
     public override parse(): EntitySelector {
         const type = this.type();
         const args = this.arguments();
-
-        const s = new Serializer();
-        s.hidePrototypeOf(Object);
-        s.hidePrototypeOf(Array);
-        s.hidePrototypeOf(Function);
-        //console.log(s.serialize(type));
-        //console.log(s.serialize(args));
-
         return new EntitySelector(type, new SelectorArguments(args));
     }
 
     static {
-        const a = new EntitySelectorParser("@e[type=player,hasitem=[{item=apple,quantity=0..}],name=!foo,x=~-0.0]").parse();
+        const a = new EntitySelectorParser("@e[scores={a=1..2,b=3},type=player,hasitem={item=apple,quantity=3..},name=!foo,x=~-0.0,haspermission={camera=enabled,camera=disabled}]").parse();
         const s = new Serializer();
         s.hidePrototypeOf(Object);
         s.hidePrototypeOf(Array);
         s.hidePrototypeOf(Function);
-        const h = a.selectorArguments.get("hasitem")!![0].value;
-        console.log(s.serialize(h[0].quantity))
+        s.hidePrototypeOf(IntRange);
+        const h = a.selectorArguments.getAsDirectValue("hasitem") as HasItem
+        console.log(s.serialize(a.selectorArguments["argumentInputs"]))
     }
 }
 
@@ -671,3 +929,4 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
  * has_propertyの定義
  * EntitySelector生成の実装
  */
+
