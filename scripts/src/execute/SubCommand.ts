@@ -1,14 +1,13 @@
 import { CommandSourceStack } from "./CommandSourceStack";
 import { PositionVectorResolver, RotationVectorResolver } from "./arguments/VectorResolver";
 import { Axis } from "./arguments/AxesReader";
-import { LegacyEntitySelector } from "./arguments/LegacyEntitySelectorReader";
 import { Vector3Builder } from "../util/Vector";
-import { CommandSender } from "./CommandSender";
 import { DimensionType, DimensionTypes, UnloadedChunksError, Vector3 } from "@minecraft/server";
 import { AnchorType, EntityAnchor } from "./arguments/EntityAnchor";
 import { BlockInfo } from "./arguments/BlockReader";
 import { MinecraftBlockTypes } from "../lib/@minecraft/vanilla-data/lib/index";
 import { ScoreAccess, ScoreComparator } from "./arguments/ScoreAccess";
+import { EntitySelector } from "./arguments/EntitySelector";
 
 export type ScanMode = "all" | "masked";
 
@@ -36,9 +35,9 @@ export abstract class RedirectableSubCommand extends SubCommand {
 }
 
 export abstract class ForkableSubCommand extends SubCommand {
-    protected readonly selector: LegacyEntitySelector;
+    protected readonly selector: EntitySelector;
 
-    protected constructor(selector: LegacyEntitySelector) {
+    protected constructor(selector: EntitySelector) {
         super();
         this.selector = selector;
     }
@@ -51,7 +50,7 @@ export abstract class GuardableSubCommand extends SubCommand {
 }
 
 export class As extends ForkableSubCommand {
-    public constructor(selector: LegacyEntitySelector) {
+    public constructor(selector: EntitySelector) {
         super(selector);
     }
 
@@ -67,7 +66,7 @@ export class As extends ForkableSubCommand {
 }
 
 export class At extends ForkableSubCommand {
-    public constructor(selector: LegacyEntitySelector) {
+    public constructor(selector: EntitySelector) {
         super(selector);
     }
 
@@ -108,7 +107,7 @@ export class Positioned extends RedirectableSubCommand {
 }
 
 export class PositionedAs extends ForkableSubCommand {
-    public constructor(selector: LegacyEntitySelector) {
+    public constructor(selector: EntitySelector) {
         super(selector);
     }
 
@@ -143,7 +142,7 @@ export class Rotated extends RedirectableSubCommand {
 }
 
 export class RotatedAs extends ForkableSubCommand {
-    public constructor(selector: LegacyEntitySelector) {
+    public constructor(selector: EntitySelector) {
         super(selector);
     }
 
@@ -181,7 +180,7 @@ export class Facing extends RedirectableSubCommand {
 export class FacingEntity extends ForkableSubCommand {
     private readonly anchorType: AnchorType;
 
-    public constructor(selector: LegacyEntitySelector, anchorType: AnchorType) {
+    public constructor(selector: EntitySelector, anchorType: AnchorType) {
         super(selector);
         this.anchorType = anchorType;
     }
@@ -263,9 +262,9 @@ export class Anchored extends RedirectableSubCommand {
 }
 
 export class IfEntity extends GuardableSubCommand {
-    private readonly selector: LegacyEntitySelector;
+    private readonly selector: EntitySelector;
 
-    public constructor(selector: LegacyEntitySelector) {
+    public constructor(selector: EntitySelector) {
         super();
         this.selector = selector;
     }

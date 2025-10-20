@@ -1,9 +1,10 @@
 import { world } from "@minecraft/server";
 import { IntRange } from "../../util/NumberRange";
-import { LegacyEntitySelector, LegacyEntitySelectorReader, LegacySelectorParseError } from "./LegacyEntitySelectorReader";
 import { CommandSourceStack } from "../CommandSourceStack";
+import { EntitySelector, EntitySelectorInterpretError, EntitySelectorParser, SelectorArguments, SelectorSortOrder } from "./EntitySelector";
+import { MinecraftEntityTypes } from "../../lib/@minecraft/vanilla-data/lib/index";
 
-export type ScoreHolder = LegacyEntitySelector | string;
+export type ScoreHolder = EntitySelector | string;
 
 export type ScoreComparator = '<' | '>' | '<=' | '>=' | '=';
 
@@ -83,16 +84,11 @@ export class ScoreAccess {
 
     public static readScoreHolder(input: string): ScoreHolder {
         if (world.getPlayers({ name: input }).length > 0) {
-            return {
-                isSingle: true,
-                getEntities(stack) {
-                    return world.getPlayers({ name: input });
-                }
-            };
+            return EntitySelectorParser.readSelector(input);
         }
         else {
             try {
-                const selector = LegacyEntitySelectorReader.readSelector(input);
+                const selector = EntitySelectorParser.readSelector(input);
     
                 if (selector.isSingle) {
                     return selector;
@@ -102,7 +98,7 @@ export class ScoreAccess {
                 }
             }
             catch (e) {
-                if (e instanceof LegacySelectorParseError) {
+                if (e instanceof EntitySelectorInterpretError) {
                     return input;
                 }
                 else {

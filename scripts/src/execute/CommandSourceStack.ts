@@ -3,6 +3,7 @@ import { DualAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { CommandSender, Origin } from "./CommandSender";
 import { AnchorType, EntityAnchor } from "./arguments/EntityAnchor";
 import { sentry } from "../lib/TypeSentry";
+import { MinecraftDimensionTypes } from "../lib/@minecraft/vanilla-data/lib/index";
 
 export interface Position {
     readonly positionSource: Entity | Vector3;
@@ -26,7 +27,7 @@ export class CommandSourceStack {
 
     private executor: Entity | undefined = undefined;
 
-    private dimension: Dimension = world.getDimension("overworld");
+    private dimension: Dimension = world.getDimension(MinecraftDimensionTypes.Overworld);
 
     private readonly position: Vector3Builder = Vector3Builder.zero();
 
@@ -34,7 +35,7 @@ export class CommandSourceStack {
 
     private readonly entityAnchor: EntityAnchor = new EntityAnchor();
 
-    public constructor(sender: CommandSender<Origin> = CommandSender.of(world)) {
+    public constructor(sender: CommandSender<Origin> = CommandSender.getWorldSender()) {
         this.sender = sender;
         this.write(DimensionTypes.get(this.sender.getDimension().id) as DimensionType);
         this.write(this.sender.getRotation());
@@ -92,7 +93,6 @@ export class CommandSourceStack {
         const stack = new CommandSourceStack();
         stack.executor = this.executor;
         stack.entityAnchor.write(this.entityAnchor);
-        this.entityAnchor
         stack.write({
             positionSource: this.entityAnchor.getPositionSource()
         });

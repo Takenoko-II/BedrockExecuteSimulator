@@ -2,7 +2,7 @@
     "include": ["scripts/src/"],
     "exclude": ["scripts/src/lib/@minecraft"],
     "compilerOptions": {
-      "allowJs": true,
+        "allowJs": true,
         "checkJs": true,
         "module": "ES2022",
         "target": "es2022",
@@ -16,7 +16,7 @@
         "noImplicitReturns": true,
         // "noUnusedParameters": true,
         // "noUnusedLocals": true,
-      "rootDir": "scripts/src",
-      "outDir": "scripts/dest"
+        "rootDir": "scripts/src",
+        "outDir": "scripts/dest"
     }
 }

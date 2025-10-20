@@ -1,5 +1,8 @@
+/**
+ * 文字列解析を行うクラスが継承する抽象クラス
+ */
 export abstract class AbstractParser<T, E extends Error> {
-    private readonly text: string;
+    protected readonly text: string;
 
     private cursor: number = 0;
 

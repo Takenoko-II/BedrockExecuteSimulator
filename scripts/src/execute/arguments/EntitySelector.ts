@@ -1,4 +1,4 @@
-import { Dimension, DimensionTypes, Entity, EntityQueryOptions, EntityQueryPropertyOptions, EntityQueryScoreOptions, GameMode, InputPermissionCategory, Player, world } from "@minecraft/server";
+import { Dimension, DimensionTypes, Entity, EntityComponentTypes, EntityQueryOptions, EntityQueryPropertyOptions, EntityQueryScoreOptions, GameMode, InputPermissionCategory, Player, world } from "@minecraft/server";
 import { MinecraftEntityTypes } from "../../lib/@minecraft/vanilla-data/lib/index";
 import { sentry, TypeModel } from "../../lib/TypeSentry";
 import { ImmutableRegistries, Registries, RegistryKey } from "../../util/Registry";
@@ -38,18 +38,18 @@ interface SelectorArgumentType<T> {
     readonly type: TypeModel<T>;
 }
 
-enum SelectorArgumentDuplicationRule {
+export enum SelectorArgumentDuplicationRule {
     ALWAYS = "ALWAYS",
     INVERTED_ONLY = "EXCLUDE_INVERTED",
     NEVER = "NEVER"
 }
 
-enum SelectorSortOrder {
+export enum SelectorSortOrder {
     NEAREST = "NEAREST",
     RANDOM = "RANDOM"
 }
 
-type SelectorArgumentInputs = Record<string, InvertibleValue[]>;
+type SelectorArgumentInputMap = Record<string, InvertibleValue[]>;
 
 interface InvertibleValue<T = unknown> {
     readonly isInverted: boolean;
@@ -329,15 +329,17 @@ const ScoresModel: TypeModel<Scores> = sentry.recordOf(
     )
 );
 
-class SelectorArguments {
-    public constructor(private readonly argumentInputs: SelectorArgumentInputs) {}
+export class SelectorArguments {
+    public constructor(private readonly argumentInputMap: SelectorArgumentInputMap) {
+        this.checkNonQueryArguments();
+    }
 
     public getAsInvertibleList<K extends keyof EntitySelectorArgumentTypeMap>(key: K): ({ readonly isInverted: boolean; readonly value: EntitySelectorArgumentTypeMap[K] })[] | undefined {
-        if (!(key in this.argumentInputs)) {
+        if (!(key in this.argumentInputMap)) {
             return undefined;
         }
 
-        const input = this.argumentInputs[key] as {
+        const input = this.argumentInputMap[key] as {
             readonly isInverted: boolean;
             readonly value: EntitySelectorArgumentTypeMap[K]
         }[];
@@ -354,7 +356,70 @@ class SelectorArguments {
     }
 
     public hasAnyOf<K extends keyof EntitySelectorArgumentTypeMap>(...keys: K[]): boolean {
-        return keys.some(k => k in this.argumentInputs);
+        return keys.some(k => k in this.argumentInputMap);
+    }
+
+    private checkNonQueryArguments() {
+        if (this.hasAnyOf("haspermission")) {
+            const permissions = this.getAsDirectValue("haspermission")!;
+
+            if (Object.keys(permissions).length === 0) {
+                throw new EntitySelectorInterpretError("セレクタ引数 'haspermission' は空のMapを受け取りません");
+            }
+
+            for (const __name__ of Object.keys(permissions)) {
+                const name = __name__ as keyof HasPermission;
+                const values = permissions[name as keyof HasPermission]!;
+
+                for (const { isInverted } of values) {
+                    if (isInverted) {
+                        throw new EntitySelectorInterpretError("セレクタ引数 haspermission' のキーは反転できません'");
+                    }
+                }
+            }
+        }
+
+        if (this.hasAnyOf("hasitem")) {
+            const hasItem = this.getAsDirectValue("hasitem")!;
+            const conditions: HasItem[] = Array.isArray(hasItem) ? hasItem : [hasItem];
+
+            for (const condition of conditions) {
+                if (condition.item.some(item => item.isInverted)) {
+                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.item' は反転できません");
+                }
+
+                const effectiveItem = condition.item[condition.item.length - 1];
+
+                if (effectiveItem.isInverted) {
+                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.item' は反転できません")
+                }
+
+                const effectiveLocation = condition.location ? condition.location[condition.location.length - 1] : undefined;
+
+                if (effectiveLocation?.isInverted) {
+                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.location' は反転できません")
+                }
+
+                const effectiveSlot = condition.slot ? condition.slot[condition.slot.length - 1] : undefined;
+
+                if (effectiveSlot?.isInverted) {
+                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.slot' は反転できません")
+                }
+                
+                // なんとquantityは上書き
+                const effectiveQuantity = condition.quantity ? condition.quantity[condition.quantity.length - 1] : undefined;
+
+                if (effectiveQuantity?.isInverted) {
+                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.quantity' は反転できません")
+                }
+
+                const effectiveData = condition.data ? condition.data[condition.data.length - 1] : undefined;
+
+                if (effectiveData?.isInverted) {
+                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.data' は反転できません")
+                }
+            }
+        }
     }
 
     public getQueryOptionsBase(): EntityQueryOptions {
@@ -620,7 +685,7 @@ class SelectorArguments {
     }
 }
 
-class EntitySelectorInterpretError extends Error {}
+export class EntitySelectorInterpretError extends Error {}
 
 export class EntitySelector {
     public readonly isSingle: boolean;
@@ -647,10 +712,6 @@ export class EntitySelector {
             // haspermission=が指定された時点でプレイヤーのみに絞られる
             const permissions = this.selectorArguments.getAsDirectValue("haspermission")!;
 
-            if (Object.keys(permissions).length === 0) {
-                throw new EntitySelectorInterpretError("セレクタ引数 'haspermission' は空のMapを受け取りません");
-            }
-
             return entities.filter(entity => {
                 if (entity instanceof Player) {
                     for (const __name__ of Object.keys(permissions)) {
@@ -659,11 +720,13 @@ export class EntitySelector {
 
                         const isEnabled = entity.inputPermissions.isPermissionCategoryEnabled(PERMISSION_NAME_INPUT_PERMISSION_CATEGORY_MAP[name]);
 
-                        if (isEnabled && values.some(value => value.value == "disabled")) {
-                            return false;
-                        }
-                        else if (!isEnabled && values.some(value => value.value == "enabled")) {
-                            return false;
+                        for (const { value } of values) {
+                            if (isEnabled && value === "disabled") {
+                                return false;
+                            }
+                            else if (!isEnabled && value === "enabled") {
+                                return false;
+                            }
                         }
                     }
 
@@ -681,12 +744,20 @@ export class EntitySelector {
             const conditions: HasItem[] = Array.isArray(hasItem) ? hasItem : [hasItem];
 
             for (const condition of conditions) {
-                if (condition.item.some(item => item.isInverted)) {
-                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.item' は反転できません");
-                }
+                // なんとquantityは上書き
+                const effectiveItem: string = condition.item[condition.item.length - 1].value;
+                const effectiveLocation: string | undefined = condition.location ? condition.location[condition.location.length - 1].value : undefined;
+                const effectiveSlot: number | undefined = condition.slot ? condition.slot[condition.slot.length - 1].value : undefined;
+                const effectiveQuantity: number | IntRange | undefined = condition.quantity ? condition.quantity[condition.quantity.length - 1].value : undefined;
+                const effectiveData: number | undefined = condition.data ? condition.data[condition.data.length - 1].value : undefined;
+
+                // TODO: hasitem=の実装
+                /*for (const entity of entities) {
+                    // Q. コンポーネントを持たないエンティティはquantity=0を通るのか?
+                    entity.hasComponent(EntityComponentTypes.Inventory);
+                }*/
             }
 
-            // TODO: hasitem=の実装
             return entities;
         }
         else return entities;
@@ -771,11 +842,11 @@ export class EntitySelector {
  * @experimental
  */
 export class EntitySelectorParser extends AbstractParser<EntitySelector, EntitySelectorInterpretError> {
-    private static readonly ENTITY_SELECTOR_TYPES = RegistryKey.create<string, SelectorType>();
+    public static readonly ENTITY_SELECTOR_TYPES = RegistryKey.create<string, SelectorType>();
 
-    private static readonly ENTITY_SELECTOR_ARGUMENT_TYPES = RegistryKey.create<string, SelectorArgumentType<unknown>>();
+    public static readonly ENTITY_SELECTOR_ARGUMENT_TYPES = RegistryKey.create<string, SelectorArgumentType<unknown>>();
 
-    private static readonly REGISTRIES: ImmutableRegistries = new Registries()
+    public static readonly REGISTRIES: ImmutableRegistries = new Registries()
         .withRegistrar(this.ENTITY_SELECTOR_TYPES, register => {
             register("@s", {
                 aliveOnly: false,
@@ -830,7 +901,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
                 default: {
                     limit: 1
                 }
-            })
+            });
         })
         .withRegistrar(EntitySelectorParser.ENTITY_SELECTOR_ARGUMENT_TYPES, register => {
             register("c", {
@@ -989,14 +1060,17 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
         super(text);
     }
 
-    private type(): SelectorType {
+    private type(): SelectorType | undefined {
         for (const { name, value } of EntitySelectorParser.REGISTRIES.get(EntitySelectorParser.ENTITY_SELECTOR_TYPES).lookup.entries()) {
             if (this.next(true, name)) {
                 return value;
             }
         }
 
-        throw this.exception("有効なセレクタタイプが見つかりませんでした");
+        // throw this.exception("有効なセレクタタイプが見つかりませんでした");
+
+        // セレクタタイプなし=プレイヤー名として解釈
+        return undefined;
     }
 
     private value(): unknown {
@@ -1106,8 +1180,8 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
         throw this.exception("Listの閉じ括弧が見つかりません");
     }
 
-    private multiMap(braces: readonly [string, string]): SelectorArgumentInputs {
-        const map: SelectorArgumentInputs = {};
+    private multiMap(braces: readonly [string, string]): SelectorArgumentInputMap {
+        const map: SelectorArgumentInputMap = {};
         this.expect(true, braces[0]);
 
         if (this.next(true, braces[1])) {
@@ -1135,7 +1209,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
         throw this.exception("Mapの閉じ括弧が見つかりません");
     }
 
-    private arguments(): SelectorArgumentInputs {
+    private arguments(): SelectorArguments {
         const inputs = this.multiMap(['[', ']']);
 
         const registry = EntitySelectorParser.REGISTRIES.get(EntitySelectorParser.ENTITY_SELECTOR_ARGUMENT_TYPES);
@@ -1178,13 +1252,41 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
             }
         }
 
-        return inputs;
+        return new SelectorArguments(inputs);
     }
 
     protected override parse(): EntitySelector {
-        const type = this.type();
-        const args = this.arguments();
-        return new EntitySelector(type, new SelectorArguments(args));
+        const selectorType = this.type();
+
+        if (selectorType === undefined) {
+            const text = this.text;
+
+            // this.finish();
+
+            return new EntitySelector(
+                {
+                    aliveOnly: false,
+                    sortOrder: SelectorSortOrder.NEAREST,
+                    default: {
+                        limit: 1,
+                        typeSpecific: {
+                            type: MinecraftEntityTypes.Player,
+                            overridable: false
+                        },
+                        processor() {
+                            return world.getPlayers({ name: text });
+                        }
+                    }
+                },
+                new SelectorArguments({})
+            );
+        }
+
+        const selectorArguments = this.arguments();
+
+        this.finish();
+
+        return new EntitySelector(selectorType, selectorArguments);
     }
 
     public static readSelector(selector: string): EntitySelector {
@@ -1201,12 +1303,4 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
  * 6. 選択制限の取得
  * 7. 選択制限の符号から配列を反転／反転しない
  * 8. 選択制限によって配列を切り取り
- */
-
-/**
- * TODO
- * haspermission=, hasitem=のチェックをreadSelector()したときにする
- * hasitem=の実装
- * プレイヤー名パース
- * Legacyからの置き換え
  */

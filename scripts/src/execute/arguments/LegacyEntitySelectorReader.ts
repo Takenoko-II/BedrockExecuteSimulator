@@ -1,3 +1,5 @@
+// もう使わない
+
 import { Dimension, DimensionTypes, Entity, EntityQueryOptions, GameMode, InputPermissionCategory, Player, Vector3, world } from "@minecraft/server";
 import { CommandSourceStack } from "../CommandSourceStack";
 import { MinecraftEntityTypes } from "../../lib/@minecraft/vanilla-data/lib/index";
@@ -5,7 +7,6 @@ import { Vector3Builder } from "../../util/Vector";
 import { PositionVectorResolver, VectorComponent, VectorParseError, VectorReader } from "./VectorResolver";
 import { MapParseError, MapReader } from "./MapReader";
 import { IntRange } from "../../util/NumberRange";
-import { RegistryKey } from "../../util/Registry";
 
 class MojangBugError extends Error {
     public constructor(message: string) {
@@ -23,7 +24,7 @@ export class LegacySelectorParseError extends Error {
 }
 
 // "FARTHEST" は廃止予定
-type SelectorSortOrder = "NEAREST" | "FARTHEST" | "RANDOM";
+type LegacySelectorSortOrder = "NEAREST" | "FARTHEST" | "RANDOM";
 
 interface EntityQueryOptionsWithC extends EntityQueryOptions {
     c?: number;
@@ -43,14 +44,14 @@ interface EntityQueryOptionsWithC extends EntityQueryOptions {
     inputPermissionFilters?: { readonly category: InputPermissionCategory; readonly enabled: boolean }[];
 }
 
-interface SelectorType {
+interface LegacySelectorType {
     readonly name: string;
 
     readonly isDeadEntityDetectable: boolean;
 
     readonly defaultTypeSpecific?: MinecraftEntityTypes;
 
-    readonly defaultEntitySortOrder: SelectorSortOrder;
+    readonly defaultEntitySortOrder: LegacySelectorSortOrder;
 
     readonly defaultEntityLimit?: number;
 }
@@ -76,7 +77,7 @@ interface ImmutableConfiguration {
 
     readonly FLOAT_PATTERN: () => RegExp;
 
-    readonly SELECTOR_TYPES: SelectorType[];
+    readonly SELECTOR_TYPES: LegacySelectorType[];
 
     readonly SELECTOR_ARGUMENT_TYPES: {
         readonly name: string;
@@ -84,7 +85,7 @@ interface ImmutableConfiguration {
     }[];
 
     readonly SORT_ORDERS: {
-        readonly [key in SelectorSortOrder]: (a: Entity, b: Entity, location: Vector3Builder) => number;
+        readonly [key in LegacySelectorSortOrder]: (a: Entity, b: Entity, location: Vector3Builder) => number;
     };
 }
 
@@ -843,7 +844,7 @@ export class LegacyEntitySelectorReader {
         return value;
     }
 
-    private type(): SelectorType {
+    private type(): LegacySelectorType {
         for (const type of immutableConfiguration.SELECTOR_TYPES) {
             if (this.next(type.name)) {
                 return type;
@@ -936,7 +937,7 @@ export class LegacyEntitySelectorReader {
         }
 
         // farthest消そうよ
-        const sortOrder: SelectorSortOrder = selectorType.defaultEntitySortOrder === "RANDOM"
+        const sortOrder: LegacySelectorSortOrder = selectorType.defaultEntitySortOrder === "RANDOM"
                 ? "RANDOM"
                 : /*((entityQueryOptionsWithC?.c ?? selectorType.defaultEntityLimit ?? (2 ** 31 - 1)) < 0) ? "FARTHEST" : */"NEAREST";
 
@@ -1077,6 +1078,9 @@ export class LegacyEntitySelectorReader {
     // public static readonly SELECTOR_ARGUMENTS: RegistryKey<>
 }
 
+/**
+ * @deprecated
+ */
 export interface LegacyEntitySelector {
     readonly isSingle: boolean;
 

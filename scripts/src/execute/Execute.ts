@@ -1,12 +1,12 @@
 import { CommandSourceStack } from "./CommandSourceStack";
 import { Align, Anchored, As, At, Facing, FacingEntity, IfBlock, IfBlocks, IfEntity, IfScoreCompare, IfScoreMatches, In, Positioned, PositionedAs, Rotated, RotatedAs, ScanMode, SubCommand, UnlessBlock, UnlessBlocks, UnlessEntity, UnlessScoreCompare, UnlessScoreMatches } from "./SubCommand";
 import { VectorReader } from "./arguments/VectorResolver";
-import { LegacyEntitySelectorReader } from "./arguments/LegacyEntitySelectorReader";
 import { AnchorType } from "./arguments/EntityAnchor";
 import { AxesReader } from "./arguments/AxesReader";
 import { DimensionTypes } from "@minecraft/server";
 import { ScoreAccess, ScoreComparator } from "./arguments/ScoreAccess";
 import { BlockReader } from "./arguments/BlockReader";
+import { EntitySelectorParser } from "./arguments/EntitySelector";
 
 interface IPositioned {
     readonly $: (position: string) => Execute;
@@ -56,12 +56,12 @@ export class Execute {
     }
 
     public as(selector: string): Execute {
-        this.subCommands.push(new As(LegacyEntitySelectorReader.readSelector(selector)));
+        this.subCommands.push(new As(EntitySelectorParser.readSelector(selector)));
         return this;
     }
 
     public at(selector: string): Execute {
-        this.subCommands.push(new At(LegacyEntitySelectorReader.readSelector(selector)));
+        this.subCommands.push(new At(EntitySelectorParser.readSelector(selector)));
         return this;
     }
 
@@ -71,7 +71,7 @@ export class Execute {
             return this;
         },
         as: (selector) => {
-            this.subCommands.push(new PositionedAs(LegacyEntitySelectorReader.readSelector(selector)));
+            this.subCommands.push(new PositionedAs(EntitySelectorParser.readSelector(selector)));
             return this;
         }
     }
@@ -82,7 +82,7 @@ export class Execute {
             return this;
         },
         as: (selector) => {
-            this.subCommands.push(new RotatedAs(LegacyEntitySelectorReader.readSelector(selector)));
+            this.subCommands.push(new RotatedAs(EntitySelectorParser.readSelector(selector)));
             return this;
         }
     }
@@ -93,7 +93,7 @@ export class Execute {
             return this;
         },
         entity: (selector, anchor) => {
-            this.subCommands.push(new FacingEntity(LegacyEntitySelectorReader.readSelector(selector), anchor));
+            this.subCommands.push(new FacingEntity(EntitySelectorParser.readSelector(selector), anchor));
             return this;
         }
     }
@@ -121,7 +121,7 @@ export class Execute {
 
     public readonly if: IGuardSubCommand = {
         entity: (selector) => {
-            this.subCommands.push(new IfEntity(LegacyEntitySelectorReader.readSelector(selector)));
+            this.subCommands.push(new IfEntity(EntitySelectorParser.readSelector(selector)));
             return this;
         },
         block: (position, blockInfo) => {
@@ -160,7 +160,7 @@ export class Execute {
 
     public readonly unless: IGuardSubCommand = {
         entity: (selector) => {
-            this.subCommands.push(new UnlessEntity(LegacyEntitySelectorReader.readSelector(selector)));
+            this.subCommands.push(new UnlessEntity(EntitySelectorParser.readSelector(selector)));
             return this;
         },
         block: (position, blockInfo) => {

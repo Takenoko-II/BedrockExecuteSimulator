@@ -1,5 +1,5 @@
-import { Block, Dimension, Entity, World } from "@minecraft/server";
-import { DualAxisRotationBuilder, TripleAxisRotationBuilder, Vector3Builder } from "../util/Vector";
+import { Block, Dimension, Entity, world, World } from "@minecraft/server";
+import { DualAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { MinecraftDimensionTypes } from "../lib/@minecraft/vanilla-data/lib/index";
 
 export type Origin = Entity | Block | World;
@@ -71,18 +71,15 @@ export abstract class CommandSender<T extends Origin> {
         }
     }
 
-    public static of(origin: Origin): CommandSender<Origin> {
-        if (origin instanceof Entity) {
-            return new this.EntityCommandSender(origin);
-        }
-        else if (origin instanceof Block) {
-            return new this.BlockCommandSender(origin);
-        }
-        else if (origin instanceof World) {
-            return new this.WorldCommandSender(origin);
-        }
-        else {
-            throw new TypeError();
-        }
+    public static getWorldSender(): CommandSender<World> {
+        return new CommandSender.WorldCommandSender(world);
+    }
+
+    public static getBlockSender(block: Block): CommandSender<Block> {
+        return new CommandSender.BlockCommandSender(block);
+    }
+
+    public static getEntitySender(entity: Entity): CommandSender<Entity> {
+        return new CommandSender.EntityCommandSender(entity);
     }
 }

@@ -1,9 +1,14 @@
+// もう使わない
+
 export class MapParseError extends Error {
     public constructor(message: string) {
         super(message);
     }
 }
 
+/**
+ * @deprecated
+ */
 export class MapReader {
     private static readonly IGNORED: string[] = [' ', '\n'];
 
