@@ -1,4 +1,4 @@
-export abstract class AbstractParser<T> {
+export abstract class AbstractParser<T, E extends Error> {
     private readonly text: string;
 
     private cursor: number = 0;
@@ -39,6 +39,8 @@ export abstract class AbstractParser<T> {
         if (ignore) this.ignore();
         return this.peekChar();
     }
+
+    protected abstract getErrorConstructor(): (message: string, cause?: Error) => E;
 
     protected abstract getWhitespace(): Set<string>;
 
@@ -233,12 +235,18 @@ export abstract class AbstractParser<T> {
         else throw this.exception("真偽値の解析に失敗しました");
     }
 
-    protected exception(message: string): InstanceType<typeof AbstractParser.ParseException>;
+    protected exception(message: string): E;
 
-    protected exception(message: string, cause: Error): InstanceType<typeof AbstractParser.ParseException>;
+    protected exception(message: string, cause: Error): E;
 
-    protected exception(message: string, cause?: Error): InstanceType<typeof AbstractParser.ParseException> {
-        return new AbstractParser.ParseException(message, this as AbstractParser<T>, cause);
+    protected exception(message: string, cause?: Error): E {
+        const a = this.text.substring(Math.max(0, this.cursor - 8), Math.max(0, this.cursor));
+        const b = this.cursor >= this.text.length ? "" : this.text.charAt(this.cursor);
+        const c = this.text.substring(Math.min(this.cursor + 1, this.text.length), Math.min(this.cursor + 8, this.text.length));
+
+        const string = `${message}; 位置: ${a} >> ${b} << ${c}`;
+
+        return this.getErrorConstructor()(string, cause);
     }
 
     protected finish(): void {
@@ -250,17 +258,4 @@ export abstract class AbstractParser<T> {
     }
 
     protected abstract parse(): T;
-
-    public static readonly ParseException = class ParseException extends Error {
-        public constructor(message: string, parser: AbstractParser<unknown>, cause?: Error) {
-            const a = parser.text.substring(Math.max(0, parser.cursor - 8), Math.max(0, parser.cursor));
-            const b = parser.cursor >= parser.text.length ? "" : parser.text.charAt(parser.cursor);
-            const c = parser.text.substring(Math.min(parser.cursor + 1, parser.text.length), Math.min(parser.cursor + 8, parser.text.length));
-
-            super(
-                `${message}; 位置: ${a} >> ${b} << ${c}`,
-                cause
-            );
-        }
-    }
 }

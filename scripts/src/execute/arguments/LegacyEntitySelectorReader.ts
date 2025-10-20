@@ -7,20 +7,23 @@ import { MapParseError, MapReader } from "./MapReader";
 import { IntRange } from "../../util/NumberRange";
 import { RegistryKey } from "../../util/Registry";
 
-export class MojangBugError extends Error {
+class MojangBugError extends Error {
     public constructor(message: string) {
         super(message + " お の れ も や ん ");
     }
 }
 
-export class SelectorParseError extends Error {
+/**
+ * @deprecated
+ */
+export class LegacySelectorParseError extends Error {
     public constructor(message: string) {
         super(message);
     }
 }
 
 // "FARTHEST" は廃止予定
-export type SelectorSortOrder = "NEAREST" | "FARTHEST" | "RANDOM";
+type SelectorSortOrder = "NEAREST" | "FARTHEST" | "RANDOM";
 
 interface EntityQueryOptionsWithC extends EntityQueryOptions {
     c?: number;
@@ -154,7 +157,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         entityQueryOptions.type = input;
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数type=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数type=は重複させることができません");
                     }
                 }
             }
@@ -175,7 +178,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         entityQueryOptions.name = input;
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数name=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数name=は重複させることができません");
                     }
                 }
             }
@@ -226,18 +229,18 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "r",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数r=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数r=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.maxDistance === undefined) {
                         entityQueryOptions.minDistance = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数r=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数r=は重複させることができません");
                     }
                 }
                 else {
-                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                    throw new LegacySelectorParseError("数値の解析に失敗しました: '" + input + "'");
                 }
             }
         },
@@ -245,18 +248,18 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "rm",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数rm=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数rm=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.minDistance === undefined) {
                         entityQueryOptions.minDistance = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数rm=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数rm=は重複させることができません");
                     }
                 }
                 else {
-                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                    throw new LegacySelectorParseError("数値の解析に失敗しました: '" + input + "'");
                 }
             }
         },
@@ -264,18 +267,18 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "rx",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数rx=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数rx=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.maxVerticalRotation === undefined) {
                         entityQueryOptions.maxVerticalRotation = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数rx=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数rx=は重複させることができません");
                     }
                 }
                 else {
-                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                    throw new LegacySelectorParseError("数値の解析に失敗しました: '" + input + "'");
                 }
             }
         },
@@ -283,18 +286,18 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "rxm",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数rxm=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数rxm=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.minVerticalRotation === undefined) {
                         entityQueryOptions.minVerticalRotation = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数rxm=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数rxm=は重複させることができません");
                     }
                 }
                 else {
-                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                    throw new LegacySelectorParseError("数値の解析に失敗しました: '" + input + "'");
                 }
             }
         },
@@ -302,18 +305,18 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "ry",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数ry=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数ry=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.maxHorizontalRotation === undefined) {
                         entityQueryOptions.maxHorizontalRotation = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数ry=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数ry=は重複させることができません");
                     }
                 }
                 else {
-                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                    throw new LegacySelectorParseError("数値の解析に失敗しました: '" + input + "'");
                 }
             }
         },
@@ -321,18 +324,18 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "rym",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数rym=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数rym=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.minHorizontalRotation === undefined) {
                         entityQueryOptions.minHorizontalRotation = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数rym=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数rym=は重複させることができません");
                     }
                 }
                 else {
-                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                    throw new LegacySelectorParseError("数値の解析に失敗しました: '" + input + "'");
                 }
             }
         },
@@ -340,18 +343,18 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "l",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数l=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数l=は否定することができません");
                 }
                 else if (immutableConfiguration.INT_PATTERN().test(input)) {
                     if (entityQueryOptions.maxLevel === undefined) {
                         entityQueryOptions.maxLevel = Number.parseInt(input);
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数l=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数l=は重複させることができません");
                     }
                 }
                 else {
-                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                    throw new LegacySelectorParseError("数値の解析に失敗しました: '" + input + "'");
                 }
             }
         },
@@ -359,18 +362,18 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "lm",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数lm=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数lm=は否定することができません");
                 }
                 else if (immutableConfiguration.INT_PATTERN().test(input)) {
                     if (entityQueryOptions.minLevel === undefined) {
                         entityQueryOptions.minLevel = Number.parseInt(input);
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数lm=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数lm=は重複させることができません");
                     }
                 }
                 else {
-                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                    throw new LegacySelectorParseError("数値の解析に失敗しました: '" + input + "'");
                 }
             }
         },
@@ -394,7 +397,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         case GameMode.Spectator:
                             return GameMode.Spectator;
                         default:
-                            throw new SelectorParseError("セレクター引数m=には無効な値です: '" + input + "'");
+                            throw new LegacySelectorParseError("セレクター引数m=には無効な値です: '" + input + "'");
                     }
                 })();
 
@@ -411,7 +414,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         entityQueryOptions.gameMode = gameMode;
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数m=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数m=は重複させることができません");
                     }
                 }
             }
@@ -420,18 +423,18 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "c",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数c=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数c=は否定することができません");
                 }
                 else if (immutableConfiguration.INT_PATTERN().test(input)) {
                     if (entityQueryOptions.c === undefined) {
                         entityQueryOptions.c = Number.parseInt(input);
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数c=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数c=は重複させることができません");
                     }
                 }
                 else {
-                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                    throw new LegacySelectorParseError("数値の解析に失敗しました: '" + input + "'");
                 }
             }
         },
@@ -439,18 +442,18 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "dx",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数dx=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数dx=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.dx === undefined) {
                         entityQueryOptions.dx = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数dx=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数dx=は重複させることができません");
                     }
                 }
                 else {
-                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                    throw new LegacySelectorParseError("数値の解析に失敗しました: '" + input + "'");
                 }
             }
         },
@@ -458,18 +461,18 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "dy",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数dy=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数dy=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.dy === undefined) {
                         entityQueryOptions.dy = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数dy=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数dy=は重複させることができません");
                     }
                 }
                 else {
-                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                    throw new LegacySelectorParseError("数値の解析に失敗しました: '" + input + "'");
                 }
             }
         },
@@ -477,18 +480,18 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "dz",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数dz=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数dz=は否定することができません");
                 }
                 else if (immutableConfiguration.FLOAT_PATTERN().test(input)) {
                     if (entityQueryOptions.dz === undefined) {
                         entityQueryOptions.dz = Number.parseFloat(input);
                     }
                     else {
-                        throw new SelectorParseError("セレクター引数dz=は重複させることができません");
+                        throw new LegacySelectorParseError("セレクター引数dz=は重複させることができません");
                     }
                 }
                 else {
-                    throw new SelectorParseError("数値の解析に失敗しました: '" + input + "'");
+                    throw new LegacySelectorParseError("数値の解析に失敗しました: '" + input + "'");
                 }
             }
         },
@@ -496,7 +499,7 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "x",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数x=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数x=は否定することができません");
                 }
                 else {
                     try {
@@ -505,12 +508,12 @@ const immutableConfiguration: ImmutableConfiguration = {
                             entityQueryOptions.x = component;
                         }
                         else {
-                            throw new SelectorParseError("セレクター引数x=は重複させることができません");
+                            throw new LegacySelectorParseError("セレクター引数x=は重複させることができません");
                         }
                     }
                     catch (e) {
                         if (e instanceof VectorParseError) {
-                            throw new SelectorParseError(e.message + "," + e.stack);
+                            throw new LegacySelectorParseError(e.message + "," + e.stack);
                         }
                         else {
                             throw e;
@@ -523,7 +526,7 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "y",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数y=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数y=は否定することができません");
                 }
                 else {
                     try {
@@ -532,12 +535,12 @@ const immutableConfiguration: ImmutableConfiguration = {
                             entityQueryOptions.y = component;
                         }
                         else {
-                            throw new SelectorParseError("セレクター引数y=は重複させることができません");
+                            throw new LegacySelectorParseError("セレクター引数y=は重複させることができません");
                         }
                     }
                     catch (e) {
                         if (e instanceof VectorParseError) {
-                            throw new SelectorParseError(e.message + "," + e.stack);
+                            throw new LegacySelectorParseError(e.message + "," + e.stack);
                         }
                         else {
                             throw e;
@@ -550,7 +553,7 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "z",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数z=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数z=は否定することができません");
                 }
                 else {
                     try {
@@ -559,12 +562,12 @@ const immutableConfiguration: ImmutableConfiguration = {
                             entityQueryOptions.z = component;
                         }
                         else {
-                            throw new SelectorParseError("セレクター引数z=は重複させることができません");
+                            throw new LegacySelectorParseError("セレクター引数z=は重複させることができません");
                         }
                     }
                     catch (e) {
                         if (e instanceof VectorParseError) {
-                            throw new SelectorParseError(e.message + "," + e.stack);
+                            throw new LegacySelectorParseError(e.message + "," + e.stack);
                         }
                         else {
                             throw e;
@@ -577,7 +580,7 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "scores",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数scores=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数scores=は否定することができません");
                 }
                 else {
                     try {
@@ -598,12 +601,12 @@ const immutableConfiguration: ImmutableConfiguration = {
                             });
                         }
                         else {
-                            throw new SelectorParseError("セレクター引数scores=は重複させることができません");
+                            throw new LegacySelectorParseError("セレクター引数scores=は重複させることができません");
                         }
                     }
                     catch (e) {
                         if (e instanceof MapParseError) {
-                            throw new SelectorParseError(e.message + "," + e.stack);
+                            throw new LegacySelectorParseError(e.message + "," + e.stack);
                         }
                         else {
                             throw e;
@@ -616,7 +619,7 @@ const immutableConfiguration: ImmutableConfiguration = {
             name: "haspermission",
             resolver: (input, not, entityQueryOptions) => {
                 if (not) {
-                    throw new SelectorParseError("セレクター引数haspermission=は否定することができません");
+                    throw new LegacySelectorParseError("セレクター引数haspermission=は否定することができません");
                 }
                 else {
                     try {
@@ -628,7 +631,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                                 const { not, value } = record[key];
 
                                 if (not) {
-                                    throw new SelectorParseError("haspermission=のキーは否定不可能です");
+                                    throw new LegacySelectorParseError("haspermission=のキーは否定不可能です");
                                 }
 
                                 const category = (() => {
@@ -656,14 +659,14 @@ const immutableConfiguration: ImmutableConfiguration = {
                                         case "move_right":
                                             return InputPermissionCategory.MoveRight;
                                         default:
-                                            throw new SelectorParseError("無効な入力権限IDです");
+                                            throw new LegacySelectorParseError("無効な入力権限IDです");
                                     }
                                 })();
 
                                 const enabled = (() => {
                                     if (value === "enabled") return true;
                                     else if (value === "disabled") return false;
-                                    else throw new SelectorParseError("入力権限のキーにはenabledまたはdisabledが有効な値です");
+                                    else throw new LegacySelectorParseError("入力権限のキーにはenabledまたはdisabledが有効な値です");
                                 })();
 
                                 return {
@@ -673,12 +676,12 @@ const immutableConfiguration: ImmutableConfiguration = {
                             });
                         }
                         else {
-                            throw new SelectorParseError("セレクター引数haspermission=は重複させることができません");
+                            throw new LegacySelectorParseError("セレクター引数haspermission=は重複させることができません");
                         }
                     }
                     catch (e) {
                         if (e instanceof MapParseError) {
-                            throw new SelectorParseError(e.message + "," + e.stack);
+                            throw new LegacySelectorParseError(e.message + "," + e.stack);
                         }
                         else {
                             throw e;
@@ -702,7 +705,10 @@ const immutableConfiguration: ImmutableConfiguration = {
     }
 };
 
-export class EntitySelectorReader {
+/**
+ * @deprecated
+ */
+export class LegacyEntitySelectorReader {
     private text: string = "";
 
     private location: number = 0;
@@ -722,7 +728,7 @@ export class EntitySelectorReader {
     private next(next: string | boolean = true): string | boolean {
         if (typeof next === "boolean") {
             if (this.isOver()) {
-                throw new SelectorParseError("文字数を超えた位置へのアクセスが発生しました");
+                throw new LegacySelectorParseError("文字数を超えた位置へのアクセスが発生しました");
             }
 
             const current: string = this.text.charAt(this.location++);
@@ -783,7 +789,7 @@ export class EntitySelectorReader {
         let value: string = "";
 
         if (this.isOver()) {
-            throw new SelectorParseError("セレクター引数の値の読み取り中に文字列の終了を検知しました");
+            throw new LegacySelectorParseError("セレクター引数の値の読み取り中に文字列の終了を検知しました");
         }
 
         let previousChar: string = this.next(true);
@@ -806,7 +812,7 @@ export class EntitySelectorReader {
                 insideQuote = !insideQuote;
 
                 if (!(this.next(immutableConfiguration.COMMA) || this.test(immutableConfiguration.SELECTOR_ARGUMENT_BRACES[1]))) {
-                    throw new SelectorParseError("セレクター引数の区切りにはカンマが期待されています");
+                    throw new LegacySelectorParseError("セレクター引数の区切りにはカンマが期待されています");
                 }
 
                 break;
@@ -831,7 +837,7 @@ export class EntitySelectorReader {
         }
 
         if (insideQuote) {
-            throw new SelectorParseError("クオーテーションが閉じられていません");
+            throw new LegacySelectorParseError("クオーテーションが閉じられていません");
         }
 
         return value;
@@ -844,7 +850,7 @@ export class EntitySelectorReader {
             }
         }
 
-        throw new SelectorParseError("無効なセレクタータイプです");
+        throw new LegacySelectorParseError("無効なセレクタータイプです");
     }
 
     private arguments(): EntityQueryOptionsWithC | undefined {
@@ -855,7 +861,7 @@ export class EntitySelectorReader {
                 return undefined;
             }
             else {
-                throw new SelectorParseError("セレクター引数の括弧が閉じられていません");
+                throw new LegacySelectorParseError("セレクター引数の括弧が閉じられていません");
             }
         }
 
@@ -878,7 +884,7 @@ export class EntitySelectorReader {
             }
 
             if (!found) {
-                throw new SelectorParseError("有効なセレクター引数名が見つかりませんでした");
+                throw new LegacySelectorParseError("有効なセレクター引数名が見つかりませんでした");
             }
 
             if ( this.next(immutableConfiguration.QUOTE)) {
@@ -899,7 +905,7 @@ export class EntitySelectorReader {
                 continue;
             }
             else {
-                throw new SelectorParseError("セレクター引数の終端にはカンマか閉じ括弧が必要です");
+                throw new LegacySelectorParseError("セレクター引数の終端にはカンマか閉じ括弧が必要です");
             }
         }
 
@@ -907,12 +913,12 @@ export class EntitySelectorReader {
     }
 
     // ごちゃごちゃしすぎだからRegistry使って作り直し
-    private index(): EntitySelector {
+    private index(): LegacyEntitySelector {
         const selectorType = this.type();
         const entityQueryOptionsWithC = this.arguments() ?? {};
 
         if (!this.isOver()) {
-            throw new SelectorParseError("セレクター引数の解析終了後に無効な文字列を検出しました");
+            throw new LegacySelectorParseError("セレクター引数の解析終了後に無効な文字列を検出しました");
         }
 
         // @sだけ特別にね
@@ -1062,8 +1068,8 @@ export class EntitySelectorReader {
         };
     }
 
-    public static readSelector(selector: string): EntitySelector {
-        const reader: EntitySelectorReader = new this();
+    public static readSelector(selector: string): LegacyEntitySelector {
+        const reader: LegacyEntitySelectorReader = new this();
         reader.text = selector;
         return reader.index();
     }
@@ -1071,7 +1077,7 @@ export class EntitySelectorReader {
     // public static readonly SELECTOR_ARGUMENTS: RegistryKey<>
 }
 
-export interface EntitySelector {
+export interface LegacyEntitySelector {
     readonly isSingle: boolean;
 
     getEntities(stack: CommandSourceStack): Entity[];

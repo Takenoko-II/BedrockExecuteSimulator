@@ -738,6 +738,40 @@ class LiteralModel<T extends boolean | number | bigint | string | symbol> extend
     }
 }
 
+class EnumLikeModel<T extends Record<string, string | number>> extends TypeModel<T[keyof T]> {
+    private readonly enumeration: T;
+
+    public constructor(enumeration: T) {
+        super();
+        this.enumeration = enumeration;
+    }
+
+    public override test(x: unknown): x is T[keyof T] {
+        if (!sentry.unionOf(sentry.string, sentry.number).test(x)) return false;
+        return Object.values(this.enumeration).includes(x);
+    }
+
+    public static newInstance<U extends Record<string, string | number>>(enumeration: U): EnumLikeModel<U> {
+        return new this(enumeration);
+    }
+
+    public override toString(): string {
+        let s = "Enum { ";
+
+        let first = true;
+        for (const [k, v] of Object.entries(this.enumeration)) {
+            if (!first) {
+                s += ', ';
+            }
+
+            s += k + '=' + v;
+            first = false;
+        }
+
+        return s + " }";
+    }
+}
+
 /**
  * `TypeSentry`が投げるエラー
  */
@@ -933,8 +967,18 @@ export class TypeSentry {
      * @param literal リテラル値
      * @returns 任意のリテラル型の`TypeModel`
      */
-    public literalOf<U extends boolean | number | bigint | string | symbol>(literal: U) {
+    public literalOf<U extends boolean | number | bigint | string | symbol>(literal: U): LiteralModel<U> {
         return LiteralModel.newInstance(literal);
+    }
+
+    /**
+     * 任意の列挙型を表現する型
+     * @param enumeration 列挙型
+     * @returns 任意の列挙型の`TypeModel`
+     * @experimental
+     */
+    public enumLikeOf<U extends Record<string, string | number>>(enumeration: U): EnumLikeModel<U> {
+        return EnumLikeModel.newInstance(enumeration);
     }
 }
 

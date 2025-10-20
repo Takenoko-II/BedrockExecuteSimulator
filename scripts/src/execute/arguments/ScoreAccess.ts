@@ -1,9 +1,9 @@
 import { world } from "@minecraft/server";
 import { IntRange } from "../../util/NumberRange";
-import { EntitySelector, EntitySelectorReader, SelectorParseError } from "./EntitySelectorReader";
+import { LegacyEntitySelector, LegacyEntitySelectorReader, LegacySelectorParseError } from "./LegacyEntitySelectorReader";
 import { CommandSourceStack } from "../CommandSourceStack";
 
-export type ScoreHolder = EntitySelector | string;
+export type ScoreHolder = LegacyEntitySelector | string;
 
 export type ScoreComparator = '<' | '>' | '<=' | '>=' | '=';
 
@@ -92,7 +92,7 @@ export class ScoreAccess {
         }
         else {
             try {
-                const selector = EntitySelectorReader.readSelector(input);
+                const selector = LegacyEntitySelectorReader.readSelector(input);
     
                 if (selector.isSingle) {
                     return selector;
@@ -102,7 +102,7 @@ export class ScoreAccess {
                 }
             }
             catch (e) {
-                if (e instanceof SelectorParseError) {
+                if (e instanceof LegacySelectorParseError) {
                     return input;
                 }
                 else {

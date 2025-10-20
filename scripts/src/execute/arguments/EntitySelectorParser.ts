@@ -38,13 +38,13 @@ interface SelectorArgumentType<T> {
     readonly type: TypeModel<T>;
 }
 
-export enum SelectorArgumentDuplicationRule {
+enum SelectorArgumentDuplicationRule {
     ALWAYS = "ALWAYS",
     INVERTED_ONLY = "EXCLUDE_INVERTED",
     NEVER = "NEVER"
 }
 
-export enum SelectorSortOrder {
+enum SelectorSortOrder {
     NEAREST = "NEAREST",
     RANDOM = "RANDOM"
 }
@@ -75,7 +75,7 @@ interface EntitySelectorArgumentTypeMap {
     readonly haspermission: HasPermission;
     readonly l: number;
     readonly lm: number;
-    readonly m: GameMode;
+    readonly m: GameModeLike;
     readonly name: string;
     readonly r: number;
     readonly rm: number;
@@ -91,9 +91,43 @@ interface EntitySelectorArgumentTypeMap {
     readonly z: VectorComponent;
 }
 
+type GameModeLike = 0 | 1 | 2 | 's' | 'c' | 'a' | "survival" | "creative" | "adventure" | "spectator" | GameMode;
+
+const GameModeLikeModel: TypeModel<GameModeLike> = sentry.unionOf(
+    sentry.literalOf(0),
+    sentry.literalOf(1),
+    sentry.literalOf(2),
+    sentry.literalOf('s'),
+    sentry.literalOf('c'),
+    sentry.literalOf('a'),
+    sentry.literalOf("survival"),
+    sentry.literalOf("creative"),
+    sentry.literalOf("adventure"),
+    sentry.literalOf("spectator"),
+    sentry.enumLikeOf(GameMode)
+);
+
 type HasProperty = Record<string, InvertibleValue<boolean>[]> & {
     readonly property?: InvertibleValue<string>[];
 }
+
+const HasPropertyModel: TypeModel<HasProperty> = sentry.intersectionOf(
+    sentry.objectOf({
+        property: sentry.optionalOf(
+            sentry.arrayOf(
+                invertibleValueOf(sentry.string)
+            )
+        )
+    }),
+    sentry.recordOf(
+        sentry.string,
+        sentry.arrayOf(
+            invertibleValueOf(
+                sentry.boolean
+            )
+        )
+    )
+) as TypeModel<HasProperty>;
 
 interface HasItem {
     // BEのサブセレクタ引数の入力はつねに重複を許可する
@@ -286,7 +320,7 @@ type Scores = Record<string, InvertibleValue<number | IntRange>[]>;
 const ScoresModel: TypeModel<Scores> = sentry.recordOf(
     sentry.string,
     sentry.arrayOf(
-            invertibleValueOf(
+        invertibleValueOf(
             sentry.unionOf(
                 sentry.number,
                 IntRangeModel
@@ -319,14 +353,14 @@ class SelectorArguments {
         return this.getAsInvertibleValue(key)?.value;
     }
 
-    public hasAny<K extends keyof EntitySelectorArgumentTypeMap>(...keys: K[]): boolean {
+    public hasAnyOf<K extends keyof EntitySelectorArgumentTypeMap>(...keys: K[]): boolean {
         return keys.some(k => k in this.argumentInputs);
     }
 
     public getQueryOptionsBase(): EntityQueryOptions {
         const entityQueryOptions: EntityQueryOptions = {};
 
-        if (this.hasAny("dx", "dy", "dz")) {
+        if (this.hasAnyOf("dx", "dy", "dz")) {
             entityQueryOptions.volume = {
                 x: this.getAsDirectValue("dx") ?? 0,
                 y: this.getAsDirectValue("dy") ?? 0,
@@ -334,7 +368,7 @@ class SelectorArguments {
             };
         }
 
-        if (this.hasAny("family")) {
+        if (this.hasAnyOf("family")) {
             const families = this.getAsInvertibleList("family")!!;
             const include: string[] = [];
             const exclude: string[] = [];
@@ -352,7 +386,7 @@ class SelectorArguments {
             entityQueryOptions.excludeFamilies = exclude;
         }
 
-        if (this.hasAny("has_property")) {
+        if (this.hasAnyOf("has_property")) {
             const propertyOptionsList: EntityQueryPropertyOptions[] = [];
             const properties = this.getAsDirectValue("has_property")!;
 
@@ -393,26 +427,54 @@ class SelectorArguments {
 
         // entityQueryOptionsにhasitemがない！！！！！！！！！！！！！！！！！！！！！！！
 
-        if (this.hasAny("l")) {
+        if (this.hasAnyOf("l")) {
             entityQueryOptions.maxLevel = this.getAsDirectValue("l")!!;
         }
 
-        if (this.hasAny("lm")) {
+        if (this.hasAnyOf("lm")) {
             entityQueryOptions.minLevel = this.getAsDirectValue("lm")!!;
         }
 
-        if (this.hasAny("m")) {
+        if (this.hasAnyOf("m")) {
             const m = this.getAsInvertibleValue("m")!!;
 
+            let gameMode: GameMode;
+            if (sentry.enumLikeOf(GameMode).test(m.value)) {
+                gameMode = m.value;
+            }
+            else switch (m.value) {
+                case 's':
+                case "survival":
+                case 0: {
+                    gameMode = GameMode.Survival;
+                    break;
+                }
+                case 'c':
+                case "creative":
+                case 1: {
+                    gameMode = GameMode.Creative;
+                    break;
+                }
+                case 'a':
+                case "adventure":
+                case 2: {
+                    gameMode = GameMode.Adventure;
+                    break;
+                }
+                case "spectator": {
+                    gameMode = GameMode.Spectator;
+                }
+            }
+
             if (m.isInverted) {
-                entityQueryOptions.excludeGameModes = [m.value];
+                entityQueryOptions.excludeGameModes = [gameMode];
             }
             else {
-                entityQueryOptions.gameMode = m.value;
+                entityQueryOptions.gameMode = gameMode;
             }
         }
 
-        if (this.hasAny("name")) {
+        if (this.hasAnyOf("name")) {
             const exclude: string[] = [];
 
             for (const name of this.getAsInvertibleList("name")!!) {
@@ -428,31 +490,31 @@ class SelectorArguments {
             entityQueryOptions.excludeNames = exclude;
         }
 
-        if (this.hasAny("r")) {
+        if (this.hasAnyOf("r")) {
             entityQueryOptions.maxDistance = this.getAsDirectValue("r")!!;
         }
 
-        if (this.hasAny("rm")) {
+        if (this.hasAnyOf("rm")) {
             entityQueryOptions.minDistance = this.getAsDirectValue("rm")!!;
         }
 
-        if (this.hasAny("rx")) {
+        if (this.hasAnyOf("rx")) {
             entityQueryOptions.maxVerticalRotation = this.getAsDirectValue("rx")!!;
         }
 
-        if (this.hasAny("rxm")) {
+        if (this.hasAnyOf("rxm")) {
             entityQueryOptions.minVerticalRotation = this.getAsDirectValue("rxm")!!;
         }
 
-        if (this.hasAny("ry")) {
+        if (this.hasAnyOf("ry")) {
             entityQueryOptions.maxHorizontalRotation = this.getAsDirectValue("ry")!!;
         }
 
-        if (this.hasAny("rym")) {
+        if (this.hasAnyOf("rym")) {
             entityQueryOptions.minHorizontalRotation = this.getAsDirectValue("rym")!!;
         }
 
-        if (this.hasAny("scores")) {
+        if (this.hasAnyOf("scores")) {
             const scoreOptionsList: EntityQueryScoreOptions[] = [];
             const scores = this.getAsDirectValue("scores")!!;
 
@@ -490,7 +552,7 @@ class SelectorArguments {
             entityQueryOptions.scoreOptions = scoreOptionsList;
         }
 
-        if (this.hasAny("tag")) {
+        if (this.hasAnyOf("tag")) {
             const include: string[] = [];
             const exclude: string[] = [];
 
@@ -507,7 +569,7 @@ class SelectorArguments {
             entityQueryOptions.excludeTags = exclude;
         }
 
-        if (this.hasAny("type")) {
+        if (this.hasAnyOf("type")) {
             const exclude: string[] = [];
 
             for (const type of this.getAsInvertibleList("type")!!) {
@@ -542,15 +604,15 @@ class SelectorArguments {
             value: 0
         };
 
-        if (this.hasAny("x")) {
+        if (this.hasAnyOf("x")) {
             x = this.getAsDirectValue("x")!
         }
 
-        if (this.hasAny("y")) {
+        if (this.hasAnyOf("y")) {
             y = this.getAsDirectValue("y")!
         }
 
-        if (this.hasAny("z")) {
+        if (this.hasAnyOf("z")) {
             z = this.getAsDirectValue("z")!
         }
 
@@ -560,7 +622,7 @@ class SelectorArguments {
 
 class EntitySelectorInterpretError extends Error {}
 
-class EntitySelector {
+export class EntitySelector {
     public readonly isSingle: boolean;
 
     private readonly entityQueryOptionsBase: EntityQueryOptions;
@@ -581,7 +643,7 @@ class EntitySelector {
     }
 
     private hasPermission(entities: Entity[]): Entity[] {
-        if (this.selectorArguments.hasAny("haspermission")) {
+        if (this.selectorArguments.hasAnyOf("haspermission")) {
             // haspermission=が指定された時点でプレイヤーのみに絞られる
             const permissions = this.selectorArguments.getAsDirectValue("haspermission")!;
 
@@ -614,7 +676,7 @@ class EntitySelector {
     }
 
     private hasItem(entities: Entity[]): Entity[] {
-        if (this.selectorArguments.hasAny("hasitem")) {
+        if (this.selectorArguments.hasAnyOf("hasitem")) {
             // TODO: hasitem=の実装
             return entities;
         }
@@ -622,18 +684,24 @@ class EntitySelector {
     }
 
     public getEntities(stack: CommandSourceStack): Entity[] {
-        const entityQueryOptions = this.entityQueryOptionsBase;
+        const entityQueryOptions: EntityQueryOptions = { ...this.entityQueryOptionsBase };
 
         const basePos = this.positionVectorResolver.resolve(stack);
         entityQueryOptions.location = basePos;
 
         let dimensions: Dimension[];
-        if (this.selectorArguments.hasAny("dx", "dy", "dz", "r", "rm")) {
+        if (this.selectorArguments.hasAnyOf("dx", "dy", "dz", "r", "rm")) {
             dimensions = [stack.getDimension()];
         }
         else {
             dimensions = DimensionTypes.getAll().map(({ typeId }) => world.getDimension(typeId));
         }
+
+        const s = new Serializer();
+        s.hidePrototypeOf(Array);
+        s.hidePrototypeOf(Object);
+        s.hidePrototypeOf(Function);
+        console.log(s.serialize(entityQueryOptions))
 
         let entities: Entity[];
         if (this.selectorType.aliveOnly) {
@@ -643,7 +711,7 @@ class EntitySelector {
             entities = dimensions.flatMap(dimension => dimension.getEntities({ ...entityQueryOptions, excludeTypes: [MinecraftEntityTypes.Player] }));
 
             if (!(entityQueryOptions.excludeTypes?.includes(MinecraftEntityTypes.Player) || entityQueryOptions.excludeTypes?.includes("player"))) {
-                entities.push(...world.getPlayers());
+                entities.push(...dimensions.flatMap(dimension => dimension.getPlayers(entityQueryOptions)));
             }
         }
 
@@ -674,7 +742,7 @@ class EntitySelector {
             }
         }
 
-        if (this.selectorArguments.hasAny("c")) {
+        if (this.selectorArguments.hasAnyOf("c")) {
             const c = this.selectorArguments.getAsDirectValue("c")!;
 
             if (c < 0) {
@@ -699,12 +767,12 @@ class EntitySelector {
  * 大幅改良版
  * @beta
  */
-export class EntitySelectorParser extends AbstractParser<EntitySelector> {
-    public static readonly ENTITY_SELECTOR_TYPES = RegistryKey.create<string, SelectorType>();
+export class EntitySelectorParser extends AbstractParser<EntitySelector, EntitySelectorInterpretError> {
+    private static readonly ENTITY_SELECTOR_TYPES = RegistryKey.create<string, SelectorType>();
 
-    public static readonly ENTITY_SELECTOR_ARGUMENT_TYPES = RegistryKey.create<string, SelectorArgumentType<unknown>>();
+    private static readonly ENTITY_SELECTOR_ARGUMENT_TYPES = RegistryKey.create<string, SelectorArgumentType<unknown>>();
 
-    public static readonly REGISTRIES: ImmutableRegistries = new Registries()
+    private static readonly REGISTRIES: ImmutableRegistries = new Registries()
         .withRegistrar(this.ENTITY_SELECTOR_TYPES, register => {
             register("@s", {
                 aliveOnly: false,
@@ -787,7 +855,11 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
                 duplicatable: SelectorArgumentDuplicationRule.ALWAYS,
                 type: sentry.string
             });
-            // has_property シンプルにめんどい
+            register("has_property", {
+                invertible: false,
+                duplicatable: SelectorArgumentDuplicationRule.NEVER,
+                type: HasPropertyModel
+            });
             register("hasitem", {
                 invertible: false,
                 duplicatable: SelectorArgumentDuplicationRule.NEVER,
@@ -814,16 +886,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
             register("m", {
                 invertible: true,
                 duplicatable: SelectorArgumentDuplicationRule.NEVER,
-                type: sentry.unionOf(
-                    sentry.literalOf(0),
-                    sentry.literalOf(1),
-                    sentry.literalOf(2),
-                    sentry.literalOf(3),
-                    sentry.literalOf(GameMode.Survival),
-                    sentry.literalOf(GameMode.Creative),
-                    sentry.literalOf(GameMode.Adventure),
-                    sentry.literalOf(GameMode.Spectator)
-                )
+                type: GameModeLikeModel
             });
             register("name", {
                 invertible: true,
@@ -891,6 +954,10 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector> {
                 type: VectorComponentModel
             });
         });
+
+    protected override getErrorConstructor(): (message: string, cause?: Error) => EntitySelectorInterpretError {
+        return (message: string, cause?: Error) => new EntitySelectorInterpretError(message, cause);
+    }
 
     protected override getWhitespace(): Set<string> {
         return new Set([' ', '\n']);
