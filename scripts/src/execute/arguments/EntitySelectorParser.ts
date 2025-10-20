@@ -677,6 +677,15 @@ export class EntitySelector {
 
     private hasItem(entities: Entity[]): Entity[] {
         if (this.selectorArguments.hasAnyOf("hasitem")) {
+            const hasItem = this.selectorArguments.getAsDirectValue("hasitem")!;
+            const conditions: HasItem[] = Array.isArray(hasItem) ? hasItem : [hasItem];
+
+            for (const condition of conditions) {
+                if (condition.item.some(item => item.isInverted)) {
+                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.item' は反転できません");
+                }
+            }
+
             // TODO: hasitem=の実装
             return entities;
         }
@@ -696,12 +705,6 @@ export class EntitySelector {
         else {
             dimensions = DimensionTypes.getAll().map(({ typeId }) => world.getDimension(typeId));
         }
-
-        const s = new Serializer();
-        s.hidePrototypeOf(Array);
-        s.hidePrototypeOf(Object);
-        s.hidePrototypeOf(Function);
-        console.log(s.serialize(entityQueryOptions))
 
         let entities: Entity[];
         if (this.selectorType.aliveOnly) {
@@ -765,7 +768,7 @@ export class EntitySelector {
 
 /**
  * 大幅改良版
- * @beta
+ * @experimental
  */
 export class EntitySelectorParser extends AbstractParser<EntitySelector, EntitySelectorInterpretError> {
     private static readonly ENTITY_SELECTOR_TYPES = RegistryKey.create<string, SelectorType>();
@@ -1198,4 +1201,10 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
  * 6. 選択制限の取得
  * 7. 選択制限の符号から配列を反転／反転しない
  * 8. 選択制限によって配列を切り取り
+ */
+
+/**
+ * TODO
+ * haspermission=, hasitem=のチェックをreadSelector()したときにする
+ * hasitem=の実装
  */
