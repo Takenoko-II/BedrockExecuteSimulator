@@ -1207,4 +1207,6 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
  * TODO
  * haspermission=, hasitem=のチェックをreadSelector()したときにする
  * hasitem=の実装
+ * プレイヤー名パース
+ * Legacyからの置き換え
  */

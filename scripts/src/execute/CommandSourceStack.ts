@@ -1,5 +1,5 @@
 import { CommandResult, Dimension, DimensionType, DimensionTypes, Entity, Vector2, Vector3, world } from "@minecraft/server";
-import { DualAxisRotationBuilder, TripleAxisRotationBuilder, Vector3Builder } from "../util/Vector";
+import { DualAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { CommandSender, Origin } from "./CommandSender";
 import { AnchorType, EntityAnchor } from "./arguments/EntityAnchor";
 import { sentry } from "../lib/TypeSentry";
