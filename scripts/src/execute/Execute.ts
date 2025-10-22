@@ -7,6 +7,7 @@ import { DimensionTypes } from "@minecraft/server";
 import { ScoreAccess, ScoreComparator } from "./arguments/ScoreAccess";
 import { BlockReader } from "./arguments/BlockReader";
 import { EntitySelectorParser } from "./arguments/EntitySelector";
+import { sentry } from "../lib/TypeSentry";
 
 interface IPositioned {
     readonly $: (position: string) => Execute;
@@ -206,8 +207,8 @@ export class Execute {
         const forks: CommandSourceStack[] = subCommand.apply(stack);
 
         for (const fork of forks) {
-            const isEndOfFirstFork: boolean = this.execute(callbackFn, fork, index + 1);
-            if (isEndOfFirstFork) callbackFn(fork);
+            const isFinalSubCommand: boolean = this.execute(callbackFn, fork, index + 1);
+            if (isFinalSubCommand) callbackFn(fork);
         }
 
         return false;
@@ -226,91 +227,71 @@ export class Execute {
         }
     }
 
-    public build(): ExecuteCommandForkRecord {
-        return new ExecuteCommandForkRecord(this.root, this.subCommands);
+    public buildIterator(): ExecuteForkIterator {
+        return new ExecuteForkIterator(this.root.clone(), this.subCommands);
     }
 }
 
-export interface RecordForkResult {
-    getCommandSourceStack(): CommandSourceStack;
+export interface Fork {
+    readonly stack: CommandSourceStack;
 
-    readonly done: boolean;
+    readonly subCommand: SubCommand;
+
+    readonly final: boolean;
 }
 
-export class ExecuteCommandForkRecord {
-    private readonly stacks: CommandSourceStack[];
+interface InternalIteratorWrapper<T> {
+    readonly likelyToBeDone: boolean;
 
-    private forkIndex: number = 0;
+    readonly fork: T;
+}
 
-    private subCommandIndex: number = 0;
+export class ExecuteForkIterator implements Iterator<Fork, Fork, void> {
+    private readonly generator: Generator<InternalIteratorWrapper<Fork>, boolean, void>
 
-    public constructor(root: CommandSourceStack, private readonly subCommands: SubCommand[]) {
-        this.stacks = [root];
+    public constructor(public readonly root: CommandSourceStack, public readonly subCommands: SubCommand[]) {
+        this.generator = this.fork(root);
     }
 
-    private isForkEnded(): boolean {
-        return this.forkIndex > this.stacks.length - 1;
-    }
+    public next(): IteratorResult<Fork, Fork> {
+        const { value } = this.generator.next();
 
-    private getCurrentSubCommand(): SubCommand {
-        return this.subCommands[this.subCommandIndex];
-    }
-
-    private nextSubCommand(): void {
-        this.subCommandIndex++;
-    }
-
-    private isSubCommandEnded(): boolean {
-        return this.subCommandIndex > this.subCommands.length - 1;
-    }
-
-    private getCurrentFork(): CommandSourceStack {
-        return this.stacks[this.forkIndex];
-    }
-
-    private nextFork(): void {
-        this.forkIndex++;
-    }
-
-    public next(): RecordForkResult {
-        if (this.isForkEnded()) {
-            this.nextSubCommand();
-
-            if (this.isSubCommandEnded()) {
-                return {
-                    getCommandSourceStack() {
-                        throw new TypeError("プロパティ 'done' がfalseの場合のみこのメソッドを呼び出すことができます");
-                    },
-
-                    done: true
-                };
-            }
-            else {
-                this.subCommandIndex = 0;
-                return this.next();
-            }
+        if (sentry.boolean.test(value)) {
+            throw new Error();
         }
-        else {
-            const subCommand = this.getCurrentSubCommand();
-            const fork = this.getCurrentFork();
 
-            // いっこもどるをここに実装したい
+        return {
+            done: value.likelyToBeDone,
+            value: value.fork
+        };
+    }
 
-            this.stacks.splice(this.forkIndex, 1, ...subCommand.apply(fork));
+    private *fork(stack: CommandSourceStack, index: number = 0, root: CommandSourceStack = stack): Generator<InternalIteratorWrapper<Fork>, boolean, void> {
+        if (index > this.subCommands.length - 1) {
+            return true;
+        }
 
-            this.nextFork();
+        const subCommand: SubCommand = this.subCommands[index];
+        const forks: CommandSourceStack[] = subCommand.apply(stack);
 
-            console.log(this.forkIndex, this.subCommandIndex, this.stacks.length, this.subCommands.length);
-
-            return {
-                getCommandSourceStack() {
-                    return fork;
+        let i = -1;
+        for (const fork of forks) {
+            i++;
+            const isFinalSubCommand: boolean = yield* this.fork(fork, index + 1, root);
+            yield {
+                fork: {
+                    stack: fork,
+                    final: isFinalSubCommand,
+                    subCommand
                 },
-
-                done: false
-            };
+                likelyToBeDone: i === forks.length - 1 && stack === root
+            }
         }
+
+        return false;
+    }
+
+    public [Symbol.iterator](): ExecuteForkIterator {
+        return this;
     }
 }
-
-// うーんむずい。[as1, as2] -> [as1, at1(1), at1(2), as2, at2(1), at2(2)] にするとat1が２つ終わった後にas2がもう一回呼ばれちゃうから、splice(1)にして履歴保存はうーーーーーーん。。。。。。。。

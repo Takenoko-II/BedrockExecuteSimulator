@@ -155,4 +155,8 @@ export class CommandSourceStack {
             ? this.getExecutor().runCommand(commandString)
             : this.getDimension().runCommand(commandString);
     }
+
+    public toString() {
+        return `CommandSourceStack { sender=${this.sender.origin.toString()}, executor=${(this.executor?.nameTag ?? this.executor?.typeId) ?? "null"}, position={ xyz=${this.position}, source=${this.entityAnchor.getPositionSource()} }, rotation=${this.rotation}, dimension=${this.dimension.id}, anchor=${this.entityAnchor.getType()} }`
+    }
 }
