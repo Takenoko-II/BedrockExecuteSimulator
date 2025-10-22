@@ -21,10 +21,3 @@ world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) =>
     }
     while (!result.done);
 });
-
-
-/** TODO
- * hasitem=の実装
- * BlockReader, AxesReader, VectorReaderをAbstractParserベースに書き換える
- * 同一座標のCSSの古い順ソート
- */

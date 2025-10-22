@@ -93,11 +93,12 @@ world.afterEvents.itemUse.subscribe(event => {
 ```
 
 ## 未実装の機能
-```
-セレクタ引数`hasitem`によるフィルタ
-選択される複数のエンティティの位置が一致していた場合のID順ソート
-実行文脈の遷移の視覚化機能
-```
+- セレクタ引数`hasitem`によるフィルタ
+- 選択される複数のエンティティの位置が一致していた場合のID順ソート
+- 実行文脈の遷移の視覚化機能
+
+## その他TODO
+- `BlockReader`, `AxesReader`, `VectorReader`を`AbstractParser`ベースに書き換える
 
 ## 実装上の留意点 (BEのコマンドの忘れがちカス仕様メモ)
 
