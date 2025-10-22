@@ -14,21 +14,14 @@ world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) =>
 
     const iter = execute.buildIterator();
 
-    let i =0;
     let result: IteratorResult<Fork, Fork>;
     do {
         result = iter.next();
-
         if (result.value.final) world.scoreboard.getObjective("a")!!.addScore(result.value.stack.getExecutor(), 1);
-        i++;
-        console.log(typeof result.value);
-
-        if (i > 100) {
-            throw new Error("OVERFLOW!!!");
-        }
     }
     while (!result.done);
 });
+
 
 /** TODO
  * hasitem=の実装
