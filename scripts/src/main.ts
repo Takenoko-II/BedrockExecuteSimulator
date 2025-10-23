@@ -1,6 +1,8 @@
 import { world } from "@minecraft/server";
 import { Execute, Fork } from "./execute/Execute";
-import { EntitySelectorParser } from "./execute/arguments/EntitySelector";
+import { ScoreAccess } from "./execute/arguments/ScoreAccess";
+import { CommandSourceStack } from "./execute/CommandSourceStack";
+import { CommandSender } from "./execute/CommandSender";
 
 world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) => {
     if (id !== "minecraft:armor_stand") return;

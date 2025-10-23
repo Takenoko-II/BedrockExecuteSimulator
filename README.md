@@ -48,9 +48,8 @@ do {
     result = iter.next();
 
     // final=trueの場合、その分岐の最後のサブコマンド(run)ということ
-    if (result.value.final) {
-        world.scoreboard.getObjective("a")!!.addScore(result.value.stack.getExecutor(), 1);
-        console.log()
+    if (result.value.final && result.value.stack) {
+        world.scoreboard.getObjective("a")!.addScore(result.value.stack.getExecutor(), 1);
     }
 }
 while (!result.done);

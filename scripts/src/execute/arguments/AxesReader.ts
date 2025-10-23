@@ -9,7 +9,7 @@ export class AxesParseError extends Error {
 export class AxesReader {
     private constructor() {}
 
-    public static readAxes(input: string): Set<Axis> {
+    public static readAxes(input: string): ReadonlySet<Axis> {
         if (input.length > 3) {
             throw new AxesParseError("軸指定文字列の長さは3を超えることができません");
         }

@@ -205,9 +205,9 @@ export class FacingEntity extends ForkableSubCommand {
 }
 
 export class Align extends RedirectableSubCommand {
-    private readonly axes: Set<Axis>;
+    private readonly axes: ReadonlySet<Axis>;
 
-    public constructor(axes: Set<Axis>) {
+    public constructor(axes: ReadonlySet<Axis>) {
         super();
         this.axes = axes;
     }
