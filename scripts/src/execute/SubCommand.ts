@@ -2,7 +2,7 @@ import { CommandSourceStack } from "./CommandSourceStack";
 import { PositionVectorResolver, RotationVectorResolver } from "./arguments/VectorResolver";
 import { Axis } from "./arguments/AxesReader";
 import { Vector3Builder } from "../util/Vector";
-import { DimensionType, DimensionTypes, UnloadedChunksError, Vector3 } from "@minecraft/server";
+import { DimensionType, UnloadedChunksError, Vector3 } from "@minecraft/server";
 import { AnchorType, EntityAnchor } from "./arguments/EntityAnchor";
 import { BlockInfo } from "./arguments/BlockReader";
 import { MinecraftBlockTypes } from "../lib/@minecraft/vanilla-data/lib/index";
@@ -73,7 +73,7 @@ export class At extends ForkableSubCommand {
     public override fork(stack: CommandSourceStack): CommandSourceStack[] {
         return this.selector.getEntities(stack).map(entity => {
             return stack.clone(css => {
-                css.write(DimensionTypes.get(entity.dimension.id) as DimensionType);
+                css.write(entity.dimension);
                 css.write({
                     positionSource: entity
                 });

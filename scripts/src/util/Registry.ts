@@ -119,7 +119,7 @@ export class ImmutableRegistries {
 
 export class Registry<K, I, O> extends ImmutableRegistry<K, I, O> {
     public override register(key: K, value: I): void {
-        super.register(key, value);
+        super.register(key, Object.freeze(value));
     }
 
     public override unregister(key: K): void {

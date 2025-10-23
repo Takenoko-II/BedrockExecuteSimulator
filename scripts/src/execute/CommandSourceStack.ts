@@ -112,11 +112,11 @@ export class CommandSourceStack {
 
     public write(rotation: Vector2): void;
 
-    public write(dimension: DimensionType): void;
+    public write(dimension: DimensionType | Dimension): void;
 
     public write(entityAnchorType: AnchorType): void;
 
-    public write(value: Entity | Position | Vector2 | DimensionType | AnchorType): void {
+    public write(value: Entity | Position | Vector2 | DimensionType | Dimension | AnchorType): void {
         if (value instanceof Entity) {
             this.executor = value;
         }
@@ -141,6 +141,9 @@ export class CommandSourceStack {
         }
         else if (value instanceof DimensionType) {
             this.dimension = world.getDimension(value.typeId);
+        }
+        else if (value instanceof Dimension) {
+            this.dimension = value;
         }
         else if (value === "eyes" || value === "feet") {
             this.entityAnchor.write(value);

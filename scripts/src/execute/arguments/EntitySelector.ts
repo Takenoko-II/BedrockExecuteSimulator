@@ -86,9 +86,9 @@ interface EntitySelectorArgumentTypeMap {
     readonly scores: Scores;
     readonly tag: string;
     readonly type: string;
-    readonly x: VectorComponent;
-    readonly y: VectorComponent;
-    readonly z: VectorComponent;
+    readonly x: VectorComponent | number;
+    readonly y: VectorComponent | number;
+    readonly z: VectorComponent | number;
 }
 
 type GameModeLike = 0 | 1 | 2 | 's' | 'c' | 'a' | "survival" | "creative" | "adventure" | "spectator" | GameMode;
@@ -670,18 +670,46 @@ export class SelectorArguments {
         };
 
         if (this.hasAnyOf("x")) {
-            x = this.getAsDirectValue("x")!
+            const _x = this.getAsDirectValue("x")!
+            x = sentry.number.test(_x) ? { type: "absolute", value: _x } : _x;
         }
 
         if (this.hasAnyOf("y")) {
-            y = this.getAsDirectValue("y")!
+            const _y = this.getAsDirectValue("y")!
+            y = sentry.number.test(_y) ? { type: "absolute", value: _y } : _y;
         }
 
         if (this.hasAnyOf("z")) {
-            z = this.getAsDirectValue("z")!
+            const _z = this.getAsDirectValue("z")!
+            z = sentry.number.test(_z) ? { type: "absolute", value: _z } : _z;
         }
 
         return new PositionVectorResolver(x, y, z);
+    }
+
+    public toString(): string {
+        let s: string = '[';
+
+        let f = false;
+        for (const [key, values] of Object.entries(this.argumentInputMap)) {
+            if (f) s += ',';
+            f = true;
+
+            s += key + '=(';
+
+            let g = false;
+            for (const { isInverted, value } of values) {
+                if (g) s += ',';
+                g = true;
+
+                if (isInverted) s += '!';
+                s += JSON.stringify(value);
+            }
+
+            s += ')';
+        }
+
+        return s + ']';
     }
 }
 
@@ -834,6 +862,16 @@ export class EntitySelector {
         }
 
         return entities;
+    }
+
+    public toString(): string {
+        for (const { name, value } of EntitySelectorParser.REGISTRIES.get(EntitySelectorParser.ENTITY_SELECTOR_TYPES).lookup.entries()) {
+            if (value === this.selectorType) {
+                return name + this.selectorArguments;
+            }
+        }
+
+        throw new Error("NEVER HAPPENS");
     }
 }
 
@@ -1015,17 +1053,17 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
             register("x", {
                 invertible: false,
                 duplicatable: SelectorArgumentDuplicationRule.NEVER,
-                type: VectorComponentModel
+                type: sentry.unionOf(VectorComponentModel, sentry.number)
             });
             register("y", {
                 invertible: false,
                 duplicatable: SelectorArgumentDuplicationRule.NEVER,
-                type: VectorComponentModel
+                type: sentry.unionOf(VectorComponentModel, sentry.number)
             });
             register("z", {
                 invertible: false,
                 duplicatable: SelectorArgumentDuplicationRule.NEVER,
-                type: VectorComponentModel
+                type: sentry.unionOf(VectorComponentModel, sentry.number)
             });
         });
 
@@ -1098,6 +1136,12 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
                 value = start;
             }
         }
+        else if (this.next(true, '~')) {
+            value = {
+                type: "relative",
+                value: this.number(false)
+            } as VectorComponent;
+        }
         else if (this.test(true, '{')) {
             value = this.multiMap(['{', '}']);
         }
@@ -1119,41 +1163,10 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
             isInverted = true;
         }
 
-        let value: unknown;
-        const registryLookup = EntitySelectorParser.REGISTRIES.get(EntitySelectorParser.ENTITY_SELECTOR_ARGUMENT_TYPES).lookup;
-
-        // ちょっと特殊処理
-        if (registryLookup.entries().filter(({ value: { type } }) => type === VectorComponentModel).map(({ name }) => name).includes(key)) {
-            let char = this.peek(true);
-            let component: VectorComponent;
-
-            if (char === '~') {
-                this.next(true);
-                component = {
-                    type: "relative",
-                    value: this.number(false)
-                }
-            }
-            else if (char === '^') {
-                throw this.exception("キャレット表記法はセレクタ引数の値では利用できません");
-            }
-            else {
-                component = {
-                    type: "absolute",
-                    value: this.number(false)
-                }
-            }
-
-            value = component;
-        }
-        else {
-            value = this.value();
-        }
-
         return {
             key,
             isInverted,
-            value
+            value: this.value()
         };
     }
 

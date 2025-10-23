@@ -233,7 +233,7 @@ export class Execute {
 }
 
 export interface Fork {
-    readonly stack: CommandSourceStack;
+    readonly stack: CommandSourceStack | undefined;
 
     readonly subCommand: SubCommand;
 
@@ -285,6 +285,17 @@ export class ExecuteForkIterator implements Iterator<Fork, Fork, void> {
                     subCommand
                 },
                 likelyToBeDone: i === forks.length - 1 && stack === root
+            }
+        }
+
+        if (forks.length === 0) {
+            yield {
+                fork: {
+                    stack: undefined,
+                    final: true,
+                    subCommand
+                },
+                likelyToBeDone: true
             }
         }
 
