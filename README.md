@@ -97,7 +97,7 @@ world.afterEvents.itemUse.subscribe(event => {
 - 実行文脈の遷移の視覚化機能
 
 ## その他TODO
-- `BlockReader`, `AxesReader`, `VectorReader`を`AbstractParser`ベースに書き換える
+- `BlockReader`, `AxesReader` を`AbstractParser`ベースに書き換える
 
 ## 実装上の留意点 (BEのコマンドの忘れがちカス仕様メモ)
 

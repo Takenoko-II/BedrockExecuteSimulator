@@ -1,6 +1,9 @@
 // もう使わない
 
-export class MapParseError extends Error {
+/**
+ * @deprecated
+ */
+export class LegacyMapParseError extends Error {
     public constructor(message: string) {
         super(message);
     }
@@ -9,7 +12,7 @@ export class MapParseError extends Error {
 /**
  * @deprecated
  */
-export class MapReader {
+export class LegacyMapReader {
     private static readonly IGNORED: string[] = [' ', '\n'];
 
     private static readonly MAP_BRACES: [string, string] = ['{', '}'];
@@ -39,12 +42,12 @@ export class MapReader {
     private next(next: string | boolean = true): string | boolean {
         if (typeof next === "boolean") {
             if (this.isOver()) {
-                throw new MapParseError("文字数を超えた位置へのアクセスが発生しました");
+                throw new LegacyMapParseError("文字数を超えた位置へのアクセスが発生しました");
             }
     
             const current: string = this.text.charAt(this.location++);
         
-            if (MapReader.IGNORED.includes(current) && next) return this.next();
+            if (LegacyMapReader.IGNORED.includes(current) && next) return this.next();
         
             return current;
         }
@@ -74,7 +77,7 @@ export class MapReader {
 
         const current: string = this.text.charAt(this.location++);
 
-        if (MapReader.IGNORED.includes(current)) {
+        if (LegacyMapReader.IGNORED.includes(current)) {
             this.ignore();
         }
         else {
@@ -97,24 +100,24 @@ export class MapReader {
     }
 
     private object(): Record<string, { readonly not: boolean; readonly value: string; }> {
-        if (!this.next(MapReader.MAP_BRACES[0])) {
-            throw new MapParseError("Mapの先頭は中括弧が期待されています");
+        if (!this.next(LegacyMapReader.MAP_BRACES[0])) {
+            throw new LegacyMapParseError("Mapの先頭は中括弧が期待されています");
         }
 
         const record: Record<string, { readonly not: boolean; readonly value: string; }> = {};
 
         while (!this.isOver()) {
-            if (this.test(MapReader.MAP_BRACES[1])) {
+            if (this.test(LegacyMapReader.MAP_BRACES[1])) {
                 break;
             }
-            else if (this.next(MapReader.COMMA)) {
+            else if (this.next(LegacyMapReader.COMMA)) {
                 continue;
             }
             else {
                 const key: string = this.key();
                 
-                if (!this.next(MapReader.EQUAL)) {
-                    throw new MapParseError("Mapのキーと値はイコールで区切られる必要があります");
+                if (!this.next(LegacyMapReader.EQUAL)) {
+                    throw new LegacyMapParseError("Mapのキーと値はイコールで区切られる必要があります");
                 }
 
                 const [not, value] = this.value();
@@ -125,8 +128,8 @@ export class MapReader {
             }
         }
 
-        if (!this.next(MapReader.MAP_BRACES[1])) {
-            throw new MapParseError("中括弧が閉じられていません");
+        if (!this.next(LegacyMapReader.MAP_BRACES[1])) {
+            throw new LegacyMapParseError("中括弧が閉じられていません");
         }
 
         return record;
@@ -141,12 +144,12 @@ export class MapReader {
             if (/^[a-zA-Z0-9_\-:\.]$/g.test(currentChar)) {
                 val += currentChar;
             }
-            else if (MapReader.IGNORED.includes(currentChar) || currentChar === MapReader.EQUAL) {
+            else if (LegacyMapReader.IGNORED.includes(currentChar) || currentChar === LegacyMapReader.EQUAL) {
                 this.back();
                 break;
             }
             else {
-                throw new MapParseError("Mapのキーに使用できない文字です: '" + currentChar + "'");
+                throw new LegacyMapParseError("Mapのキーに使用できない文字です: '" + currentChar + "'");
             }
         }
 
@@ -158,7 +161,7 @@ export class MapReader {
 
         let not = false;
 
-        if (!this.isOver() && this.next(MapReader.NOT)) {
+        if (!this.isOver() && this.next(LegacyMapReader.NOT)) {
             not = true;
         }
 
@@ -168,12 +171,12 @@ export class MapReader {
             if (/^[a-zA-Z0-9_\-:\.]$/g.test(currentChar)) {
                 val += currentChar;
             }
-            else if (MapReader.IGNORED.includes(currentChar) || currentChar === MapReader.COMMA || currentChar === MapReader.MAP_BRACES[1]) {
+            else if (LegacyMapReader.IGNORED.includes(currentChar) || currentChar === LegacyMapReader.COMMA || currentChar === LegacyMapReader.MAP_BRACES[1]) {
                 this.back();
                 break;
             }
             else {
-                throw new MapParseError("Mapの値に使用できない文字です: '" + currentChar + "'");
+                throw new LegacyMapParseError("Mapの値に使用できない文字です: '" + currentChar + "'");
             }
         }
 
@@ -182,7 +185,7 @@ export class MapReader {
 
     private index(): Record<string, { readonly not: boolean; readonly value: string; }> {
         const r = this.object();
-        if (!this.isOver()) throw new MapParseError("Mapの解析終了後に無効な文字列を検知しました");
+        if (!this.isOver()) throw new LegacyMapParseError("Mapの解析終了後に無効な文字列を検知しました");
         return r;
     }
 

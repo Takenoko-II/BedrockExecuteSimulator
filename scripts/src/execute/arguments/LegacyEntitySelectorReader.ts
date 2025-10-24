@@ -4,10 +4,13 @@ import { Dimension, DimensionTypes, Entity, EntityQueryOptions, GameMode, InputP
 import { CommandSourceStack } from "../CommandSourceStack";
 import { MinecraftEntityTypes } from "../../lib/@minecraft/vanilla-data/lib/index";
 import { Vector3Builder } from "../../util/Vector";
-import { PositionVectorResolver, VectorComponent, VectorParseError, VectorReader } from "./VectorResolver";
-import { MapParseError, MapReader } from "./MapReader";
+import { LegacyPositionVectorResolver, LegacyVectorComponent, LegacyVectorParseError, LegacyVectorReader } from "./LegacyVectorResolver";
+import { LegacyMapParseError, LegacyMapReader } from "./LegacyMapReader";
 import { IntRange } from "../../util/NumberRange";
 
+/**
+ * @deprecated
+ */
 class MojangBugError extends Error {
     public constructor(message: string) {
         super(message + " お の れ も や ん ");
@@ -29,11 +32,11 @@ type LegacySelectorSortOrder = "NEAREST" | "FARTHEST" | "RANDOM";
 interface EntityQueryOptionsWithC extends EntityQueryOptions {
     c?: number;
 
-    x?: VectorComponent;
+    x?: LegacyVectorComponent;
 
-    y?: VectorComponent;
+    y?: LegacyVectorComponent;
 
-    z?: VectorComponent;
+    z?: LegacyVectorComponent;
 
     dx?: number;
 
@@ -505,7 +508,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                 else {
                     try {
                         if (entityQueryOptions.x === undefined) {
-                            const component = VectorReader.absOrRelComponent(input);
+                            const component = LegacyVectorReader.absOrRelComponent(input);
                             entityQueryOptions.x = component;
                         }
                         else {
@@ -513,7 +516,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         }
                     }
                     catch (e) {
-                        if (e instanceof VectorParseError) {
+                        if (e instanceof LegacyVectorParseError) {
                             throw new LegacySelectorParseError(e.message + "," + e.stack);
                         }
                         else {
@@ -532,7 +535,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                 else {
                     try {
                         if (entityQueryOptions.y === undefined) {
-                            const component = VectorReader.absOrRelComponent(input);
+                            const component = LegacyVectorReader.absOrRelComponent(input);
                             entityQueryOptions.y = component;
                         }
                         else {
@@ -540,7 +543,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         }
                     }
                     catch (e) {
-                        if (e instanceof VectorParseError) {
+                        if (e instanceof LegacyVectorParseError) {
                             throw new LegacySelectorParseError(e.message + "," + e.stack);
                         }
                         else {
@@ -559,7 +562,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                 else {
                     try {
                         if (entityQueryOptions.z === undefined) {
-                            const component = VectorReader.absOrRelComponent(input);
+                            const component = LegacyVectorReader.absOrRelComponent(input);
                             entityQueryOptions.z = component;
                         }
                         else {
@@ -567,7 +570,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         }
                     }
                     catch (e) {
-                        if (e instanceof VectorParseError) {
+                        if (e instanceof LegacyVectorParseError) {
                             throw new LegacySelectorParseError(e.message + "," + e.stack);
                         }
                         else {
@@ -585,7 +588,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                 }
                 else {
                     try {
-                        const record = MapReader.readStringMap(input);
+                        const record = LegacyMapReader.readStringMap(input);
 
                         if (entityQueryOptions.scoreOptions === undefined) {
                             entityQueryOptions.scoreOptions = Object.keys(record)
@@ -606,7 +609,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         }
                     }
                     catch (e) {
-                        if (e instanceof MapParseError) {
+                        if (e instanceof LegacyMapParseError) {
                             throw new LegacySelectorParseError(e.message + "," + e.stack);
                         }
                         else {
@@ -624,7 +627,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                 }
                 else {
                     try {
-                        const record = MapReader.readStringMap(input);
+                        const record = LegacyMapReader.readStringMap(input);
 
                         if (entityQueryOptions.inputPermissionFilters === undefined) {
                             entityQueryOptions.inputPermissionFilters = Object.keys(record)
@@ -681,7 +684,7 @@ const immutableConfiguration: ImmutableConfiguration = {
                         }
                     }
                     catch (e) {
-                        if (e instanceof MapParseError) {
+                        if (e instanceof LegacyMapParseError) {
                             throw new LegacySelectorParseError(e.message + "," + e.stack);
                         }
                         else {
@@ -982,15 +985,15 @@ export class LegacyEntitySelectorReader {
         // x=, y=, z=取り出し
         const { x: px, y: py, z: pz } = entityQueryOptionsWithC;
 
-        const defaultComponent: VectorComponent = {
+        const defaultComponent: LegacyVectorComponent = {
             type: "relative",
             value: 0
         };
 
         // セレクタの探索基準座標をつくる
-        const posVecResolver: PositionVectorResolver | undefined = px === undefined && py === undefined && pz === undefined
+        const posVecResolver: LegacyPositionVectorResolver | undefined = px === undefined && py === undefined && pz === undefined
             ? undefined
-            : new PositionVectorResolver(px ?? defaultComponent, py ?? defaultComponent, pz ?? defaultComponent);
+            : new LegacyPositionVectorResolver(px ?? defaultComponent, py ?? defaultComponent, pz ?? defaultComponent);
 
         // c=が指定済みかつ負ならば配列はリバースされる
         const isArrayReversed: boolean = entityQueryOptionsWithC?.c === undefined

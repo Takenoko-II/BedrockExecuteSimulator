@@ -1,13 +1,12 @@
-import { CommandSourceStack } from "./CommandSourceStack";
+import { CommandSourceStack, AnchorType } from "./CommandSourceStack";
 import { Align, Anchored, As, At, Facing, FacingEntity, IfBlock, IfBlocks, IfEntity, IfScoreCompare, IfScoreMatches, In, Positioned, PositionedAs, Rotated, RotatedAs, ScanMode, SubCommand, UnlessBlock, UnlessBlocks, UnlessEntity, UnlessScoreCompare, UnlessScoreMatches } from "./SubCommand";
-import { VectorReader } from "./arguments/VectorResolver";
-import { AnchorType } from "./arguments/EntityAnchor";
 import { AxesReader } from "./arguments/AxesReader";
-import { DimensionTypes } from "@minecraft/server";
+import { DimensionTypes, world } from "@minecraft/server";
 import { ScoreAccess, ScoreComparator } from "./arguments/ScoreAccess";
 import { BlockReader } from "./arguments/BlockReader";
 import { EntitySelectorParser } from "./arguments/EntitySelector";
 import { sentry } from "../lib/TypeSentry";
+import { VectorParser } from "./arguments/VectorParser";
 
 interface IPositioned {
     readonly $: (position: string) => Execute;
@@ -68,7 +67,7 @@ export class Execute {
 
     public readonly positioned: IPositioned = {
         $: (position) => {
-            this.subCommands.push(new Positioned(VectorReader.readPosition(position)));
+            this.subCommands.push(new Positioned(VectorParser.readPositionVector(position)));
             return this;
         },
         as: (selector) => {
@@ -79,7 +78,7 @@ export class Execute {
 
     public readonly rotated: IRotated = {
         $: (rotation) => {
-            this.subCommands.push(new Rotated(VectorReader.readRotation(rotation)));
+            this.subCommands.push(new Rotated(VectorParser.readRotationVector(rotation)));
             return this;
         },
         as: (selector) => {
@@ -90,7 +89,7 @@ export class Execute {
 
     public readonly facing: IFacing = {
         $: (position) => {
-            this.subCommands.push(new Facing(VectorReader.readPosition(position)));
+            this.subCommands.push(new Facing(VectorParser.readPositionVector(position)));
             return this;
         },
         entity: (selector, anchor) => {
@@ -111,7 +110,7 @@ export class Execute {
             throw new TypeError(`ディメンションID '${dimensionId}' は無効です`);
         }
 
-        this.subCommands.push(new In(dimensionType));
+        this.subCommands.push(new In(world.getDimension(dimensionId.toLowerCase())));
         return this;
     }
 
@@ -127,16 +126,16 @@ export class Execute {
         },
         block: (position, blockInfo) => {
             this.subCommands.push(new IfBlock(
-                VectorReader.readPosition(position),
+                VectorParser.readPositionVector(position),
                 BlockReader.readBlock(blockInfo)
             ));
             return this;
         },
         blocks: (begin, end, destination, scanMode) => {
             this.subCommands.push(new IfBlocks(
-                VectorReader.readPosition(begin),
-                VectorReader.readPosition(end),
-                VectorReader.readPosition(destination),
+                VectorParser.readPositionVector(begin),
+                VectorParser.readPositionVector(end),
+                VectorParser.readPositionVector(destination),
                 scanMode
             ));
             return this;
@@ -166,16 +165,16 @@ export class Execute {
         },
         block: (position, blockInfo) => {
             this.subCommands.push(new UnlessBlock(
-                VectorReader.readPosition(position),
+                VectorParser.readPositionVector(position),
                 BlockReader.readBlock(blockInfo)
             ));
             return this;
         },
         blocks: (begin, end, destination, scanMode) => {
             this.subCommands.push(new UnlessBlocks(
-                VectorReader.readPosition(begin),
-                VectorReader.readPosition(end),
-                VectorReader.readPosition(destination),
+                VectorParser.readPositionVector(begin),
+                VectorParser.readPositionVector(end),
+                VectorParser.readPositionVector(destination),
                 scanMode
             ));
             return this;

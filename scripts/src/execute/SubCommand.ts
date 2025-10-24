@@ -1,13 +1,12 @@
-import { CommandSourceStack } from "./CommandSourceStack";
-import { PositionVectorResolver, RotationVectorResolver } from "./arguments/VectorResolver";
+import { CommandSourceStack, AnchorType } from "./CommandSourceStack";
 import { Axis } from "./arguments/AxesReader";
 import { Vector3Builder } from "../util/Vector";
-import { DimensionType, UnloadedChunksError, Vector3 } from "@minecraft/server";
-import { AnchorType, EntityAnchor } from "./arguments/EntityAnchor";
+import { Dimension, DimensionType, UnloadedChunksError, Vector3 } from "@minecraft/server";
 import { BlockInfo } from "./arguments/BlockReader";
 import { MinecraftBlockTypes } from "../lib/@minecraft/vanilla-data/lib/index";
 import { ScoreAccess, ScoreComparator } from "./arguments/ScoreAccess";
 import { EntitySelector } from "./arguments/EntitySelector";
+import { PositionVectorResolver, RotationVectorResolver } from "./arguments/VectorParser";
 
 export type ScanMode = "all" | "masked";
 
@@ -56,7 +55,7 @@ export class As extends ForkableSubCommand {
 
     public override fork(stack: CommandSourceStack): CommandSourceStack[] {
         return this.selector.getEntities(stack).map(entity => {
-            return stack.clone(css => css.write(entity));
+            return stack.clone(css => css.setExecutor(entity));
         });
     }
 
@@ -73,11 +72,9 @@ export class At extends ForkableSubCommand {
     public override fork(stack: CommandSourceStack): CommandSourceStack[] {
         return this.selector.getEntities(stack).map(entity => {
             return stack.clone(css => {
-                css.write(entity.dimension);
-                css.write({
-                    positionSource: entity
-                });
-                css.write(entity.getRotation());
+                css.setDimension(entity.dimension);
+                css.setPosition(entity);
+                css.setRotation(entity.getRotation());
             });
         });
     }
@@ -96,9 +93,7 @@ export class Positioned extends RedirectableSubCommand {
     }
 
     public redirect(stack: CommandSourceStack): CommandSourceStack {
-        return stack.clone(css => css.write({
-            positionSource: this.posVecResolver.resolve(css)
-        }));
+        return stack.clone(css => css.setPosition(this.posVecResolver.resolve(css)));
     }
 
     public toString(): string {
@@ -113,9 +108,7 @@ export class PositionedAs extends ForkableSubCommand {
 
     public fork(stack: CommandSourceStack): CommandSourceStack[] {
         return this.selector.getEntities(stack).map(entity => {
-            return stack.clone(css => css.write({
-                positionSource: entity
-            }));
+            return stack.clone(css => css.setPosition(entity));
         });
     }
 
@@ -133,7 +126,7 @@ export class Rotated extends RedirectableSubCommand {
     }
 
     public redirect(stack: CommandSourceStack): CommandSourceStack {
-        return stack.clone(css => css.write(this.rotVecResolver.resolve(css)));
+        return stack.clone(css => css.setRotation(this.rotVecResolver.resolve(css)));
     }
 
     public toString(): string {
@@ -148,7 +141,7 @@ export class RotatedAs extends ForkableSubCommand {
 
     public fork(stack: CommandSourceStack): CommandSourceStack[] {
         return this.selector.getEntities(stack).map(entity => {
-            return stack.clone(css => css.write(entity.getRotation()));
+            return stack.clone(css => css.setRotation(entity));
         });
     }
 
@@ -168,7 +161,7 @@ export class Facing extends RedirectableSubCommand {
     public redirect(stack: CommandSourceStack): CommandSourceStack {
         return stack.clone(css => {
             const dir = css.getPosition().getDirectionTo(this.posVecResolver.resolve(stack));
-            css.write(dir.getRotation2d());
+            css.setRotation(dir.getRotation2d());
         });
     }
 
@@ -187,14 +180,10 @@ export class FacingEntity extends ForkableSubCommand {
 
     public fork(stack: CommandSourceStack): CommandSourceStack[] {
         return this.selector.getEntities(stack).map(entity => {
-            const entityAnchor = new EntityAnchor();
-            entityAnchor.write(entity);
-            entityAnchor.write(this.anchorType);
-
             return stack.clone(css => {
-                const to = Vector3Builder.from(entity.location).add(entityAnchor.getOffset());
+                const to = this.anchorType === "eyes" ? entity.getHeadLocation() : entity.location;
                 const dir = css.getPosition().getDirectionTo(to);
-                css.write(dir.getRotation2d());
+                css.setRotation(dir.getRotation2d());
             });
         });
     }
@@ -228,15 +217,15 @@ export class Align extends RedirectableSubCommand {
 }
 
 export class In extends RedirectableSubCommand {
-    private readonly dimensionType: DimensionType;
+    private readonly dimension: Dimension;
 
-    public constructor(dimensionType: DimensionType) {
+    public constructor(dimension: Dimension) {
         super();
-        this.dimensionType = dimensionType;
+        this.dimension = dimension;
     }
 
     public redirect(stack: CommandSourceStack): CommandSourceStack {
-        return stack.clone(css => css.write(this.dimensionType));
+        return stack.clone(css => css.setDimension(this.dimension));
     }
 
     public toString(): string {
@@ -253,7 +242,7 @@ export class Anchored extends RedirectableSubCommand {
     }
 
     public redirect(stack: CommandSourceStack): CommandSourceStack {
-        return stack.clone(css => css.write(this.anchorType));
+        return stack.clone(css => css.applyAnchor(this.anchorType));
     }
 
     public toString(): string {

@@ -1,4 +1,6 @@
-import { ImmutableRegistries, Registries, RegistryKey } from "../../util/Registry";
+import { sentry } from "../../lib/TypeSentry";
+import { DualAxisRotationBuilder, TripleAxisRotationBuilder, Vector3Builder } from "../../util/Vector";
+import { CommandSourceStack } from "../CommandSourceStack";
 import { AbstractParser } from "./AbstractParser";
 
 export class VectorParseError extends Error {}
@@ -15,15 +17,99 @@ export interface VectorComponent {
     readonly value: number;
 }
 
-export abstract class AbstractVectorResolver {}
+export abstract class AbstractVectorResolver<T> {
+    public abstract resolve(stack: CommandSourceStack): T;
+}
 
-export class PositionVectorResolver extends AbstractVectorResolver {
+export class PositionVectorResolver extends AbstractVectorResolver<Vector3Builder> {
     public constructor(private readonly x: VectorComponent, private readonly y: VectorComponent, private readonly z: VectorComponent) {
         super();
     }
+
+    private isLocal(): boolean {
+        return this.x.type === VectorComponentType.LOCAL && this.y.type === VectorComponentType.LOCAL && this.z.type === VectorComponentType.LOCAL;
+    }
+
+    private isAbsoluteRelative(): boolean {
+        return this.x.type !== VectorComponentType.LOCAL && this.y.type !== VectorComponentType.LOCAL && this.z.type !== VectorComponentType.LOCAL;
+    }
+
+    public resolve(stack: CommandSourceStack): Vector3Builder {
+        if (this.isLocal()) {
+            const objectCoordsSystem = TripleAxisRotationBuilder.from(stack.getRotation()).getObjectCoordsSystem();
+    
+            return stack.getPosition()
+                .add(objectCoordsSystem.getX().length(this.x.value))
+                .add(objectCoordsSystem.getY().length(this.y.value))
+                .add(objectCoordsSystem.getZ().length(this.z.value));
+        }
+        else if (this.isAbsoluteRelative()) {
+            const v = stack.getPosition();
+    
+            if (this.x.type === VectorComponentType.RELATIVE) {
+                v.x += this.x.value;
+            }
+            else {
+                v.x = this.x.value;
+            }
+
+            if (this.y.type === VectorComponentType.RELATIVE) {
+                v.y += this.y.value;
+            }
+            else {
+                v.y = this.y.value;
+            }
+    
+            if (this.z.type === VectorComponentType.RELATIVE) {
+                v.z += this.z.value;
+            }
+            else {
+                v.z = this.z.value;
+            }
+    
+            return v;
+        }
+        else {
+            throw new TypeError("チルダ表記法とキャレット表記法を混在させることはできません");
+        }
+    }
 }
 
-export class VectorParser extends AbstractParser<AbstractVectorResolver, VectorParseError> {
+export class RotationVectorResolver extends AbstractVectorResolver<DualAxisRotationBuilder> {
+    public constructor(private readonly yaw: VectorComponent, private readonly pitch: VectorComponent) {
+        super();
+    }
+
+    private isInvalid(): boolean {
+        return this.yaw.type === VectorComponentType.LOCAL || this.pitch.type === VectorComponentType.LOCAL;
+    }
+
+    public override resolve(stack: CommandSourceStack): DualAxisRotationBuilder {
+        const v = stack.getRotation();
+
+        if (this.isInvalid()) {
+            throw new TypeError("チルダ表記法とキャレット表記法を混在させることはできません");
+        }
+
+        if (this.yaw.type === VectorComponentType.RELATIVE) {
+            v.yaw += this.yaw.value;
+        }
+        else {
+            v.yaw = this.yaw.value;
+        }
+
+        if (this.pitch.type === VectorComponentType.RELATIVE) {
+            v.pitch += this.pitch.value;
+        }
+        else {
+            v.pitch = this.pitch.value;
+        }
+
+        return v;
+    }
+}
+
+export abstract class VectorParser<T> extends AbstractParser<AbstractVectorResolver<T>, VectorParseError> {
     protected override getTrue(): string {
         return "true";
     }
@@ -63,7 +149,7 @@ export class VectorParser extends AbstractParser<AbstractVectorResolver, VectorP
         if (ignore) this.ignore();
 
         if (this.test(false, '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9')) {
-            const number = this.number(ignore);
+            const number = this.number(false);
             if (number.isWrittenAsInt && blockCenterCorrection) {
                 return number.value + 0.5
             }
@@ -77,8 +163,9 @@ export class VectorParser extends AbstractParser<AbstractVectorResolver, VectorP
         }
     }
 
-    private component(blockCenterCorrection: boolean): VectorComponent {
+    protected component(blockCenterCorrection: boolean): VectorComponent {
         const type = this.type();
+
         switch (type) {
             case VectorComponentType.ABSOLUTE: {
                 return {
@@ -101,16 +188,39 @@ export class VectorParser extends AbstractParser<AbstractVectorResolver, VectorP
         }
     }
 
-    private position(): PositionVectorResolver {
-        // ~00, 000, ~~0 のようなものはパース方法的に勝手に弾かれる
-        const x = this.component(true);
-        const y = this.component(false);
-        const z = this.component(true);
+    private static readonly Vector3Parser = class Vector3Parser extends VectorParser<Vector3Builder> {
+        public override parse(): PositionVectorResolver {
+            const x = this.component(true);
+            const y = this.component(false);
+            const z = this.component(true);
 
-        return new PositionVectorResolver(x, y, z);
+            this.finish();
+
+            return new PositionVectorResolver(x, y, z);
+        }
     }
 
-    protected override parse(): AbstractVectorResolver {
-        throw this.exception("他のメソッドを使用してください");
+    private static readonly Vector2Parser = class Vector2Parser extends VectorParser<DualAxisRotationBuilder> {
+        public override parse(): RotationVectorResolver {
+            const yaw = this.component(false);
+            const pitch = this.component(false);
+
+            this.finish();
+
+            return new RotationVectorResolver(yaw, pitch);
+        }
+    }
+
+    public static readPositionVector(position: string): PositionVectorResolver {
+        return new VectorParser.Vector3Parser(position).parse();
+    }
+
+    public static readRotationVector(rotation: string): RotationVectorResolver {
+        return new VectorParser.Vector2Parser(rotation).parse();
     }
 }
+
+export const VectorComponentModel = sentry.objectOf({
+    type: sentry.enumLikeOf(VectorComponentType),
+    value: sentry.number.nonNaN()
+});

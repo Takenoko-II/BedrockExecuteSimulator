@@ -1,12 +1,12 @@
-import { Dimension, DimensionTypes, Entity, EntityComponentTypes, EntityQueryOptions, EntityQueryPropertyOptions, EntityQueryScoreOptions, GameMode, InputPermissionCategory, Player, world } from "@minecraft/server";
+import { Dimension, DimensionTypes, Entity, EntityQueryOptions, EntityQueryPropertyOptions, EntityQueryScoreOptions, GameMode, InputPermissionCategory, Player, world } from "@minecraft/server";
 import { MinecraftEntityTypes } from "../../lib/@minecraft/vanilla-data/lib/index";
 import { sentry, TypeModel } from "../../lib/TypeSentry";
 import { ImmutableRegistries, Registries, RegistryKey } from "../../util/Registry";
 import { Serializer } from "../../util/Serializable";
 import { AbstractParser } from "./AbstractParser";
-import { PositionVectorResolver, VectorComponent, VectorComponentModel } from "./VectorResolver";
 import { IntRange } from "../../util/NumberRange";
 import { CommandSourceStack } from "../CommandSourceStack";
+import { PositionVectorResolver, VectorComponent, VectorComponentModel, VectorComponentType } from "./VectorParser";
 
 interface SelectorType {
     readonly aliveOnly: boolean;
@@ -655,33 +655,33 @@ export class SelectorArguments {
 
     public getPositionVectorResolver(): PositionVectorResolver {
         let x: VectorComponent = {
-            type: "relative",
+            type: VectorComponentType.RELATIVE,
             value: 0
         };
 
         let y: VectorComponent = {
-            type: "relative",
+            type: VectorComponentType.RELATIVE,
             value: 0
         };
 
         let z: VectorComponent = {
-            type: "relative",
+            type: VectorComponentType.RELATIVE,
             value: 0
         };
 
         if (this.hasAnyOf("x")) {
             const _x = this.getAsDirectValue("x")!
-            x = sentry.number.test(_x) ? { type: "absolute", value: _x } : _x;
+            x = sentry.number.test(_x) ? { type: VectorComponentType.ABSOLUTE, value: _x } : _x;
         }
 
         if (this.hasAnyOf("y")) {
             const _y = this.getAsDirectValue("y")!
-            y = sentry.number.test(_y) ? { type: "absolute", value: _y } : _y;
+            y = sentry.number.test(_y) ? { type: VectorComponentType.ABSOLUTE, value: _y } : _y;
         }
 
         if (this.hasAnyOf("z")) {
             const _z = this.getAsDirectValue("z")!
-            z = sentry.number.test(_z) ? { type: "absolute", value: _z } : _z;
+            z = sentry.number.test(_z) ? { type: VectorComponentType.ABSOLUTE, value: _z } : _z;
         }
 
         return new PositionVectorResolver(x, y, z);
@@ -1138,7 +1138,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
         }
         else if (this.next(true, '~')) {
             value = {
-                type: "relative",
+                type: VectorComponentType.RELATIVE,
                 value: this.float(true)
             } as VectorComponent;
         }
@@ -1195,10 +1195,13 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
 
     private multiMap(braces: readonly [string, string]): SelectorArgumentInputMap {
         const map: SelectorArgumentInputMap = {};
-        this.expect(true, braces[0]);
+        
+        if (!this.next(true, braces[0])) {
+            return map;
+        }
 
         if (this.next(true, braces[1])) {
-            return map;
+            throw this.exception("空のセレクタ引数は無効です");
         }
 
         while (!this.isOver()) {

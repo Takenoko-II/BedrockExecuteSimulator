@@ -167,7 +167,7 @@ export abstract class AbstractParser<T, E extends Error> {
         try {
             return {
                 value: Number(sb),
-                isWrittenAsInt: pointAppeared
+                isWrittenAsInt: !pointAppeared
             };
         }
         catch (e) {

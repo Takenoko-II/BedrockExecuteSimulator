@@ -1,26 +1,9 @@
 import { CommandResult, Dimension, DimensionType, DimensionTypes, Entity, Vector2, Vector3, world } from "@minecraft/server";
 import { DualAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { CommandSender, Origin } from "./CommandSender";
-import { AnchorType, EntityAnchor } from "./arguments/EntityAnchor";
-import { sentry } from "../lib/TypeSentry";
 import { MinecraftDimensionTypes } from "../lib/@minecraft/vanilla-data/lib/index";
 
-export interface Position {
-    readonly positionSource: Entity | Vector3;
-}
-
-function isPosition(value: unknown): value is Position {
-    return sentry.objectOf({
-        positionSource: sentry.unionOf(
-            sentry.objectOf({
-                x: sentry.number.nonNaN(),
-                y: sentry.number.nonNaN(),
-                z: sentry.number.nonNaN()
-            }),
-            sentry.classOf(Entity)
-        )
-    }).test(value);
-}
+export type AnchorType = "eyes" | "feet";
 
 export class CommandSourceStack {
     private readonly sender: CommandSender<Origin>;
@@ -33,23 +16,20 @@ export class CommandSourceStack {
 
     private readonly rotation: DualAxisRotationBuilder = DualAxisRotationBuilder.zero();
 
-    private readonly entityAnchor: EntityAnchor = new EntityAnchor();
+    private positionSource: Entity | undefined = undefined;
 
     public constructor(sender: CommandSender<Origin> = CommandSender.getWorldSender()) {
         this.sender = sender;
-        this.write(DimensionTypes.get(this.sender.getDimension().id) as DimensionType);
-        this.write(this.sender.getRotation());
+
+        this.setDimension(this.sender.getDimension());
+        this.setRotation(this.sender.getRotation());
 
         if (this.sender.origin instanceof Entity) {
-            this.write(this.sender.origin);
-            this.write({
-                positionSource: this.sender.origin
-            });
+            this.setExecutor(this.sender.origin);
+            this.setPosition(this.sender.origin);
         }
         else {
-            this.write({
-                positionSource: this.sender.getPosition()
-            });
+            this.setPosition(this.sender.getPosition());
         }
     }
 
@@ -81,23 +61,21 @@ export class CommandSourceStack {
         return this.dimension;
     }
 
-    public getEntityAnchor(): EntityAnchor {
-        return this.entityAnchor;
-    }
-
     public clone(): CommandSourceStack;
 
     public clone(modifier: (newStack: CommandSourceStack) => void): CommandSourceStack;
 
     public clone(modifier?: (newStack: CommandSourceStack) => void): CommandSourceStack {
         const stack = new CommandSourceStack();
+
         stack.executor = this.executor;
-        stack.entityAnchor.write(this.entityAnchor);
-        stack.write({
-            positionSource: this.entityAnchor.getPositionSource()
-        });
-        stack.write(this.rotation);
-        stack.write(DimensionTypes.get(this.dimension.id) as DimensionType);
+        stack.position.x = this.position.x;
+        stack.position.y = this.position.y;
+        stack.position.z = this.position.z;
+        stack.rotation.yaw = this.rotation.yaw;
+        stack.rotation.pitch = this.rotation.pitch;
+        stack.dimension = this.dimension;
+        stack.positionSource = this.positionSource;
 
         if (modifier !== undefined) {
             modifier(stack);
@@ -106,49 +84,47 @@ export class CommandSourceStack {
         return stack;
     }
 
-    public write(entity: Entity): void;
-
-    public write(position: Position): void;
-
-    public write(rotation: Vector2): void;
-
-    public write(dimension: DimensionType | Dimension): void;
-
-    public write(entityAnchorType: AnchorType): void;
-
-    public write(value: Entity | Position | Vector2 | DimensionType | Dimension | AnchorType): void {
-        if (value instanceof Entity) {
-            this.executor = value;
+    public applyAnchor(type: AnchorType): void {
+        if (type === "eyes" && this.positionSource) {
+            this.position.y += this.positionSource.getHeadLocation().y - this.positionSource.location.y;
         }
-        else if (isPosition(value)) {
-            this.entityAnchor.write(value.positionSource);
 
-            if (value.positionSource instanceof Entity) {
-                this.position.x = value.positionSource.location.x;
-                this.position.y = value.positionSource.location.y;
-                this.position.z = value.positionSource.location.z;
-            }
-            else {
-                this.position.x = value.positionSource.x;
-                this.position.y = value.positionSource.y;
-                this.position.z = value.positionSource.z;
-            }
+        this.positionSource = undefined;
+    }
+
+    public setExecutor(executor: Entity | undefined): void {
+        this.executor = executor;
+    }
+
+    public setPosition(source: Entity | Vector3): void {
+        if (source instanceof Entity) {
+            this.position.x = source.location.x;
+            this.position.y = source.location.y;
+            this.position.z = source.location.z;
+            this.positionSource = source;
         }
-        else if (DualAxisRotationBuilder.isVector2(value)) {
-            const builder = DualAxisRotationBuilder.from(value);
-            this.rotation.yaw = builder.yaw;
-            this.rotation.pitch = builder.pitch;
+        else {
+            this.position.x = source.x;
+            this.position.y = source.y;
+            this.position.z = source.z;
+            this.positionSource = undefined;
         }
-        else if (value instanceof DimensionType) {
-            this.dimension = world.getDimension(value.typeId);
+    }
+
+    public setRotation(source: Entity | Vector2): void {
+        if (source instanceof Entity) {
+            const rotation = source.getRotation();
+            this.rotation.yaw = rotation.y;
+            this.rotation.pitch = rotation.x;
         }
-        else if (value instanceof Dimension) {
-            this.dimension = value;
+        else {
+            this.rotation.yaw = source.y;
+            this.rotation.pitch = source.x;
         }
-        else if (value === "eyes" || value === "feet") {
-            this.entityAnchor.write(value);
-            this.entityAnchor.write(this.position);
-        }
+    }
+
+    public setDimension(dimension: Dimension): void {
+        this.dimension = dimension;
     }
 
     public runCommand(command: string): CommandResult {
@@ -160,6 +136,6 @@ export class CommandSourceStack {
     }
 
     public toString() {
-        return `CommandSourceStack { sender=${this.sender.origin.toString()}, executor=${(this.executor?.nameTag ?? this.executor?.typeId) ?? "null"}, position={ xyz=${this.position}, source=${this.entityAnchor.getPositionSource()} }, rotation=${this.rotation}, dimension=${this.dimension.id}, anchor=${this.entityAnchor.getType()} }`
+        return `CommandSourceStack { sender=${this.sender.origin.toString()}, executor=${(this.executor?.nameTag ?? this.executor?.typeId) ?? "null"}, position={ xyz=${this.position}, source=${this.positionSource} }, rotation=${this.rotation}, dimension=${this.dimension.id} }`
     }
 }
