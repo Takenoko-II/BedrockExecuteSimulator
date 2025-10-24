@@ -1117,15 +1117,15 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
             value = this.bool();
         }
         else if (this.next(true, "..")) {
-            const end = this.number(true);
+            const end = this.int(false);
             value = IntRange.maxOnly(end);
         }
         else if (this.test(true, '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-')) {
-            const start = this.number(true);
+            const start = this.int(true);
 
             if (this.next(true, "..")) {
                 if (this.test(true, '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-')) {
-                    const end = this.number(true);
+                    const end = this.int(false);
                     value = IntRange.minMax(start, end);
                 }
                 else {
@@ -1139,7 +1139,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
         else if (this.next(true, '~')) {
             value = {
                 type: "relative",
-                value: this.number(false)
+                value: this.float(true)
             } as VectorComponent;
         }
         else if (this.test(true, '{')) {

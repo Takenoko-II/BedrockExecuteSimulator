@@ -121,7 +121,7 @@ export abstract class AbstractParser<T, E extends Error> {
         return s;
     }
 
-    protected number(asInt: boolean): number {
+    protected number(ignore: boolean): { readonly value: number; readonly isWrittenAsInt: boolean } {
         const SIGNS: Set<string> = new Set(['+', '-']);
         const INTEGERS: Set<string> = new Set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
         const DECIMAL_POINT = '.';
@@ -135,8 +135,8 @@ export abstract class AbstractParser<T, E extends Error> {
             throw this.exception("number() の実行に失敗しました: isOver");
         }
 
-        const initial = this.peek(true);
-        this.next(true);
+        const initial = this.peek(ignore);
+        this.next(ignore);
 
         if (SIGNS.has(initial)) {
             sb += initial;
@@ -164,12 +164,11 @@ export abstract class AbstractParser<T, E extends Error> {
             this.next(false);
         }
 
-        if (pointAppeared && asInt) {
-            throw this.exception("number() の実行に失敗しました: 非整数を検出しました: " + sb);
-        }
-
         try {
-            return Number(sb);
+            return {
+                value: Number(sb),
+                isWrittenAsInt: pointAppeared
+            };
         }
         catch (e) {
             if (e instanceof Error) {
@@ -179,6 +178,18 @@ export abstract class AbstractParser<T, E extends Error> {
                 throw e;
             }
         }
+    }
+
+    protected int(ignore: boolean): number {
+        const result = this.number(ignore);
+        if (!result.isWrittenAsInt) {
+            throw this.exception("整数の入力を検出できませんでした");
+        }
+        else return result.value;
+    }
+
+    protected float(ignore: boolean): number {
+        return this.number(ignore).value;
     }
 
     protected string(asQuoted: boolean, ...stoppers: string[]): string {
