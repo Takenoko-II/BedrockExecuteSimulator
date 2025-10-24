@@ -3,6 +3,9 @@
 名前のとおり
 <br>開発中
 
+## executeコマンドの仕様解説集
+- ### [エンティティアンカーの仕組み](/mds/EntityAnchor.md)
+
 ## 実装済みの機能
 
 ### 1. `execute`コマンドの再現
@@ -86,7 +89,7 @@ world.afterEvents.itemUse.subscribe(event => {
         const block = ctx.getDimension().getBlock(ctx.getPosition())!;
         block.setType(MinecraftBlockTypes.DiamondBlock);
 
-        console.log(ctx.getExecutor().nameTag, ctx.getEntityAnchor().getType(), ctx.getRotation());
+        console.log(ctx.getExecutor().nameTag, ctx.getPositionSource(), ctx.getRotation());
     });
 });
 ```

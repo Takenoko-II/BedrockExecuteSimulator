@@ -1,4 +1,4 @@
-import { CommandResult, Dimension, DimensionType, DimensionTypes, Entity, Vector2, Vector3, world } from "@minecraft/server";
+import { CommandResult, Dimension, Entity, Vector2, Vector3, world } from "@minecraft/server";
 import { DualAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { CommandSender, Origin } from "./CommandSender";
 import { MinecraftDimensionTypes } from "../lib/@minecraft/vanilla-data/lib/index";
@@ -45,6 +45,10 @@ export class CommandSourceStack {
         return this.executor;
     }
 
+    public getExecutorOrNull(): Entity | undefined {
+        return this.executor;
+    }
+
     public hasExecutor(): boolean {
         return this.executor !== undefined;
     }
@@ -59,6 +63,10 @@ export class CommandSourceStack {
 
     public getDimension(): Dimension {
         return this.dimension;
+    }
+
+    public getPositionSource(): Entity | undefined {
+        return this.positionSource;
     }
 
     public clone(): CommandSourceStack;
