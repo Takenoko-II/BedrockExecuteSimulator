@@ -38,6 +38,10 @@ execute.as("@e[type=armor_stand,scores={a=0}]").at("@e[type=armor_stand,scores={
 実行文脈の遷移をじっくり確認できる
 
 ```ts
+import { world } from "@minecraft/server";
+import { Execute } from "./execute/Execute";
+import { Fork } from "./execute/ExecuteForkIterator";
+
 const execute: Execute = new Execute();
 
 execute.as("@e[type=armor_stand,scores={a=0}]").at("@e[type=armor_stand,scores={a=0}]");
@@ -98,6 +102,9 @@ world.afterEvents.itemUse.subscribe(event => {
 - セレクタ引数`hasitem`によるフィルタ
 - 選択される複数のエンティティの位置が一致していた場合のID順ソート
 - 実行文脈の遷移の視覚化機能
+
+## 既知のバグ
+- `hasitem` 等の `MapLike` を値にとる引数は未定義のキーを含めることができる(修正予定)
 
 ## 実装上の留意点 (BEのコマンドの忘れがちカス仕様メモ)
 

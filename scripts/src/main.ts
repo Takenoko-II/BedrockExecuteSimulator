@@ -1,8 +1,5 @@
 import { world } from "@minecraft/server";
 import { Execute } from "./execute/Execute";
-import { CommandSourceStack, EntityAnchor } from "./execute/CommandSourceStack";
-import { CommandSender } from "./execute/CommandSender";
-import { BlockPredicateParser } from "./execute/arguments//block/BlockPredicateParser";
 import { Vector3Builder } from "./util/Vector";
 import { AxisSetParser } from "./execute/arguments/axis/AxisSetParser";
 import { Fork } from "./execute/ExecuteForkIterator";
