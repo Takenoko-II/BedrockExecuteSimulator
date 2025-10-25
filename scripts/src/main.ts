@@ -3,6 +3,7 @@ import { Execute, Fork } from "./execute/Execute";
 import { CommandSourceStack, EntityAnchor } from "./execute/CommandSourceStack";
 import { CommandSender } from "./execute/CommandSender";
 import { EntitySelectorParser } from "./execute/arguments/EntitySelector";
+import { BlockPredicateParser } from "./execute/arguments/BlockPredicateParser";
 
 world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) => {
     if (id !== "minecraft:armor_stand") return;
@@ -26,12 +27,9 @@ world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) =>
     }
     while (!result.done);*/
 
-    const execute = new Execute(new CommandSourceStack(CommandSender.getEntitySender(source)));
-
-    console.log(JSON.stringify(EntitySelectorParser.readSelector("@e[type=armor_stand,name=!\"a\",scores={a=!1}]")));
-
-    execute.positioned.$("0.0 0.0 0.0").positioned.$("^^^-2").positioned.$("~~ 0.0").positioned.$("^^^1").facing.$("0.0 0.0 0.0")
-    .facing.$("^^^-1").positioned.as("@s").positioned.$("^^^1").run("particle minecraft:basic_flame_particle ^ ^ ^1");
+    new Execute().as("@e[type=armor_stand]").at("@s").if.block("~~-0.1~", "wool[\"color\"=\"green\"]").run(s => {
+        s.getDimension().spawnParticle("minecraft:mobflame_single", s.getPosition());
+    })
 });
 
 /**

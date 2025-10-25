@@ -890,7 +890,6 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
                 aliveOnly: false,
                 sortOrder: SelectorSortOrder.NEAREST,
                 traits: {
-                    limit: 1,
                     processor(stack, entities) {
                         if (!stack.hasExecutor()) return [];
                         return entities.includes(stack.getExecutor()) ? [stack.getExecutor()] : [];

@@ -64,7 +64,7 @@ export class CommandSourceStack {
     public clone(modifier: (newStack: CommandSourceStack) => void): CommandSourceStack;
 
     public clone(modifier?: (newStack: CommandSourceStack) => void): CommandSourceStack {
-        const stack = new CommandSourceStack();
+        const stack = new CommandSourceStack(this.sender);
 
         stack.executor = this.executor;
         stack.position.x = this.position.x;

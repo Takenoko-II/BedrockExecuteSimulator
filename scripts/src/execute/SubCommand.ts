@@ -2,11 +2,11 @@ import { CommandSourceStack, EntityAnchor } from "./CommandSourceStack";
 import { Axis } from "./arguments/AxesReader";
 import { Vector3Builder } from "../util/Vector";
 import { Dimension, UnloadedChunksError, Vector3 } from "@minecraft/server";
-import { BlockInfo } from "./arguments/BlockReader";
 import { MinecraftBlockTypes } from "../lib/@minecraft/vanilla-data/lib/index";
 import { ScoreAccess, ScoreComparator } from "./arguments/ScoreAccess";
 import { EntitySelector } from "./arguments/EntitySelector";
 import { PositionVectorResolver, RotationVectorResolver } from "./arguments/VectorParser";
+import { BlockPredicate } from "./arguments/BlockPredicateParser";
 
 export type ScanMode = "all" | "masked";
 
@@ -270,19 +270,19 @@ export class IfEntity extends GuardableSubCommand {
 export class IfBlock extends GuardableSubCommand {
     private readonly posVecResolver: PositionVectorResolver;
 
-    private readonly blockInfo: BlockInfo;
+    private readonly blockPredicate: BlockPredicate;
 
-    public constructor(posVecResolver: PositionVectorResolver, blockInfo: BlockInfo) {
+    public constructor(posVecResolver: PositionVectorResolver, blockPredicate: BlockPredicate) {
         super();
         this.posVecResolver = posVecResolver;
-        this.blockInfo = blockInfo;
+        this.blockPredicate = blockPredicate;
     }
 
     public test(stack: CommandSourceStack): boolean {
         try {
             const block = stack.getDimension().getBlock(this.posVecResolver.resolve(stack));
 
-            return (block === undefined) ? false : block.permutation.matches(this.blockInfo.type.id, this.blockInfo.states);
+            return (block === undefined) ? false : this.blockPredicate.matches(block);
         }
         catch (e) {
             return false;

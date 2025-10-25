@@ -3,10 +3,10 @@ import { Align, Anchored, As, At, Facing, FacingEntity, IfBlock, IfBlocks, IfEnt
 import { AxesReader } from "./arguments/AxesReader";
 import { DimensionTypes, world } from "@minecraft/server";
 import { ScoreAccess, ScoreComparator } from "./arguments/ScoreAccess";
-import { BlockReader } from "./arguments/BlockReader";
 import { EntitySelectorParser } from "./arguments/EntitySelector";
 import { sentry } from "../lib/TypeSentry";
 import { VectorParser } from "./arguments/VectorParser";
+import { BlockPredicateParser } from "./arguments/BlockPredicateParser";
 
 interface IPositioned {
     readonly $: (position: string) => Execute;
@@ -29,7 +29,7 @@ interface IFacing {
 interface IGuardSubCommand {
     readonly entity: (selector: string) => Execute;
 
-    readonly block: (position: string, blockInfo: string) => Execute;
+    readonly block: (position: string, blockPredicate: string) => Execute;
 
     readonly blocks: (begin: string, end: string, destination: string, scanMode: ScanMode) => Execute;
 
@@ -124,10 +124,10 @@ export class Execute {
             this.subCommands.push(new IfEntity(EntitySelectorParser.readSelector(selector)));
             return this;
         },
-        block: (position, blockInfo) => {
+        block: (position, blockPredicate) => {
             this.subCommands.push(new IfBlock(
                 VectorParser.readPositionVector(position),
-                BlockReader.readBlock(blockInfo)
+                BlockPredicateParser.readBlockPredicate(blockPredicate)
             ));
             return this;
         },
@@ -163,10 +163,10 @@ export class Execute {
             this.subCommands.push(new UnlessEntity(EntitySelectorParser.readSelector(selector)));
             return this;
         },
-        block: (position, blockInfo) => {
+        block: (position, blockPredicate) => {
             this.subCommands.push(new UnlessBlock(
                 VectorParser.readPositionVector(position),
-                BlockReader.readBlock(blockInfo)
+                BlockPredicateParser.readBlockPredicate(blockPredicate)
             ));
             return this;
         },

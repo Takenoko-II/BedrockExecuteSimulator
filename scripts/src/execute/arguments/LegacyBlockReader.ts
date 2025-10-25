@@ -1,18 +1,20 @@
+// もう使わない
+
 import { BlockStates, BlockType, BlockTypes } from "@minecraft/server";
 
-export class BlockParseError extends Error {
+export class LegacyBlockParseError extends Error {
     public constructor(message: string) {
         super(message);
     }
 }
 
-export interface BlockInfo {
+export interface LegacyBlockInfo {
     readonly type: BlockType;
 
     readonly states?: Record<string, string | number | boolean>;
 }
 
-export class BlockReader {
+export class LegacyBlockReader {
     private static readonly IGNORED: string[] = [' ', '\n'];
 
     private static readonly STATE_BRACES: [string, string] = ['[', ']'];
@@ -52,12 +54,12 @@ export class BlockReader {
     private next(next: string | boolean = true): string | boolean {
         if (typeof next === "boolean") {
             if (this.isOver()) {
-                throw new BlockParseError("文字数を超えた位置へのアクセスが発生しました");
+                throw new LegacyBlockParseError("文字数を超えた位置へのアクセスが発生しました");
             }
 
             const current: string = this.text.charAt(this.location++);
     
-            if (BlockReader.IGNORED.includes(current) && next) return this.next();
+            if (LegacyBlockReader.IGNORED.includes(current) && next) return this.next();
     
             return current;
         }
@@ -87,7 +89,7 @@ export class BlockReader {
 
         const current: string = this.text.charAt(this.location++);
 
-        if (BlockReader.IGNORED.includes(current)) {
+        if (LegacyBlockReader.IGNORED.includes(current)) {
             this.ignore();
         }
         else {
@@ -115,45 +117,45 @@ export class BlockReader {
         while (!this.isOver()) {
             const current = this.next(false);
 
-            if (current === BlockReader.STATE_BRACES[0] || BlockReader.IGNORED.includes(current)) {
+            if (current === LegacyBlockReader.STATE_BRACES[0] || LegacyBlockReader.IGNORED.includes(current)) {
                 this.back();
                 break;
             }
             else if (/^[^a-zA-Z0-9_:]$/g.test(current)) {
-                throw new BlockParseError("ブロックIDに含むことのできない文字です: '" + current + "'");
+                throw new LegacyBlockParseError("ブロックIDに含むことのできない文字です: '" + current + "'");
             }
             else {
                 string += current;
             }
         }
 
-        if (BlockReader.ID_PATTERN().test(string)) {
+        if (LegacyBlockReader.ID_PATTERN().test(string)) {
             const type = BlockTypes.get(string);
 
             if (type === undefined) {
-                throw new BlockParseError("不明なブロックIDです: '" + string + "'");
+                throw new LegacyBlockParseError("不明なブロックIDです: '" + string + "'");
             }
             else {
                 return type;
             }
         }
         else {
-            throw new BlockParseError("ブロックIDとして無効な文字列です: '" + string + "'");
+            throw new LegacyBlockParseError("ブロックIDとして無効な文字列です: '" + string + "'");
         }
     }
 
     private string(): string {
         let string: string = "";
 
-        if (!this.next(BlockReader.QUOTE)) {
-            throw new BlockParseError("ブロックステートでは文字列は'\"'で開始される必要があります");
+        if (!this.next(LegacyBlockReader.QUOTE)) {
+            throw new LegacyBlockParseError("ブロックステートでは文字列は'\"'で開始される必要があります");
         }
 
 
         while (!this.isOver()) {
             const current = this.next(false);
 
-            if (current === BlockReader.QUOTE) {
+            if (current === LegacyBlockReader.QUOTE) {
                 this.back();
                 break;
             }
@@ -162,8 +164,8 @@ export class BlockReader {
             }
         }
 
-        if (!this.next(BlockReader.QUOTE)) {
-            throw new BlockParseError("ブロックステートでは文字列は'\"'で終了される必要があります");
+        if (!this.next(LegacyBlockReader.QUOTE)) {
+            throw new LegacyBlockParseError("ブロックステートでは文字列は'\"'で終了される必要があります");
         }
 
         return string;
@@ -172,17 +174,17 @@ export class BlockReader {
     private integer(): number {
         let string: string = "";
 
-        if (this.next(BlockReader.SIGNS[0])) {
-            string += BlockReader.SIGNS[0];
+        if (this.next(LegacyBlockReader.SIGNS[0])) {
+            string += LegacyBlockReader.SIGNS[0];
         }
-        else if (this.next(BlockReader.SIGNS[1])) {
-            string += BlockReader.SIGNS[1];
+        else if (this.next(LegacyBlockReader.SIGNS[1])) {
+            string += LegacyBlockReader.SIGNS[1];
         }
 
         while (!this.isOver()) {
             const current = this.next(false);
 
-            if (BlockReader.NUMBERS.includes(current)) {
+            if (LegacyBlockReader.NUMBERS.includes(current)) {
                 string += current;
             }
             else {
@@ -191,57 +193,57 @@ export class BlockReader {
             }
         }
 
-        if (BlockReader.INT_PATTERN().test(string)) {
+        if (LegacyBlockReader.INT_PATTERN().test(string)) {
             return Number.parseInt(string);
         }
         else {
-            throw new BlockParseError("整数として無効な文字列です: '" + string + "'");
+            throw new LegacyBlockParseError("整数として無効な文字列です: '" + string + "'");
         }
     }
 
     private boolean(): boolean {
-        if (this.next(BlockReader.BOOLS[0])) {
+        if (this.next(LegacyBlockReader.BOOLS[0])) {
             return false;
         }
-        else if (this.next(BlockReader.BOOLS[1])) {
+        else if (this.next(LegacyBlockReader.BOOLS[1])) {
             return true;
         }
         else {
-            throw new BlockParseError("真偽値が見つかりませんでした");
+            throw new LegacyBlockParseError("真偽値が見つかりませんでした");
         }
     }
 
     private value(): string | number | boolean {
-        if (this.test(BlockReader.QUOTE)) {
+        if (this.test(LegacyBlockReader.QUOTE)) {
             return this.string();
         }
-        else if (BlockReader.SIGNS.some(sign => this.test(sign)) || BlockReader.NUMBERS.some(number => this.test(number))) {
+        else if (LegacyBlockReader.SIGNS.some(sign => this.test(sign)) || LegacyBlockReader.NUMBERS.some(number => this.test(number))) {
             return this.integer();
         }
-        else if (BlockReader.BOOLS.some(bool => this.test(bool))) {
+        else if (LegacyBlockReader.BOOLS.some(bool => this.test(bool))) {
             return this.boolean();
         }
         else {
-            throw new BlockParseError("ブロックステートに渡される値は文字列、整数、真偽値のいずれかである必要があります");
+            throw new LegacyBlockParseError("ブロックステートに渡される値は文字列、整数、真偽値のいずれかである必要があります");
         }
     }
 
     private states(): Record<string, string | number | boolean> {
         const record: Record<string, string | number | boolean> = {};
 
-        if (!this.next(BlockReader.STATE_BRACES[0])) {
-            throw new BlockParseError("ブロックステートは'['で開始される必要があります");
+        if (!this.next(LegacyBlockReader.STATE_BRACES[0])) {
+            throw new LegacyBlockParseError("ブロックステートは'['で開始される必要があります");
         }
 
-        if (this.next(BlockReader.STATE_BRACES[1])) {
+        if (this.next(LegacyBlockReader.STATE_BRACES[1])) {
             return record;
         }
 
         while (!this.isOver()) {
             const key = this.string();
 
-            if (!this.next(BlockReader.EQUAL)) {
-                throw new BlockParseError("イコールが見つかりませんでした");
+            if (!this.next(LegacyBlockReader.EQUAL)) {
+                throw new LegacyBlockParseError("イコールが見つかりませんでした");
             }
 
             const value = this.value();
@@ -249,30 +251,30 @@ export class BlockReader {
             const blockStateType = BlockStates.get(key);
 
             if (blockStateType === undefined) {
-                throw new BlockParseError("不明なブロックステートです: '" + key + "'");
+                throw new LegacyBlockParseError("不明なブロックステートです: '" + key + "'");
             }
             else if (!blockStateType.validValues.includes(value)) {
-                throw new BlockParseError("ブロックステート '" + key + "' には無効な値です: '" + value + "'");
+                throw new LegacyBlockParseError("ブロックステート '" + key + "' には無効な値です: '" + value + "'");
             }
 
             record[key] = value;
 
-            if (this.test(BlockReader.STATE_BRACES[1])) {
+            if (this.test(LegacyBlockReader.STATE_BRACES[1])) {
                 break;
             }
-            else if (!this.next(BlockReader.COMMA)) {
-                throw new BlockParseError("ブロックステートの区切りにはカンマが必要です");
+            else if (!this.next(LegacyBlockReader.COMMA)) {
+                throw new LegacyBlockParseError("ブロックステートの区切りにはカンマが必要です");
             }
         }
 
-        if (!this.next(BlockReader.STATE_BRACES[1])) {
-            throw new BlockParseError("ブロックステートは']'で終了される必要があります");
+        if (!this.next(LegacyBlockReader.STATE_BRACES[1])) {
+            throw new LegacyBlockParseError("ブロックステートは']'で終了される必要があります");
         }
 
         return record;
     }
 
-    private index(): BlockInfo {
+    private index(): LegacyBlockInfo {
         const type = this.id();
 
         if (this.isOver()) {
@@ -282,13 +284,13 @@ export class BlockReader {
         const states = this.states();
 
         if (!this.isOver()) {
-            throw new BlockParseError("ブロックステートの解析後に無効な文字列を検出しました: '" + this.text.slice(this.location) + "'");
+            throw new LegacyBlockParseError("ブロックステートの解析後に無効な文字列を検出しました: '" + this.text.slice(this.location) + "'");
         }
 
         return { type, states };
     }
 
-    public static readBlock(input: string): BlockInfo {
+    public static readBlock(input: string): LegacyBlockInfo {
         const reader = new this();
         reader.text = input;
         return reader.index();
