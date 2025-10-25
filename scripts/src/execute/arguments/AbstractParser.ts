@@ -192,10 +192,32 @@ export abstract class AbstractParser<T, E extends Error> {
         return this.number(ignore).value;
     }
 
-    protected string(asQuoted: boolean, ...stoppers: string[]): string {
+    protected unquotedString(ignore: boolean, ...stoppers: string[]): string {
+        const str = this.string(ignore, ...stoppers);
+        if (str.isQuoted) {
+            throw this.exception("文字列がクォートで囲まれています");
+        }
+        else {
+            return str.value;
+        }
+    }
+
+    protected quotedString(ignore: boolean): string {
+        const str = this.string(ignore);
+        if (str.isQuoted) {
+            return str.value;
+        }
+        else {
+            throw this.exception("文字列がクォートで囲まれていません");
+        }
+    }
+
+    protected string(ignore: boolean, ...stoppers: string[]): { readonly value: string; readonly isQuoted: boolean } {
         let sb: string = "";
-        let current: string = this.peek(true);
-        this.next(true);
+        let current: string = this.peek(ignore);
+        this.next(ignore);
+
+        let isQuoted: boolean;
 
         if (this.getQuotes().has(current)) {
             const ESCAPE: string = '\\';
@@ -216,8 +238,10 @@ export abstract class AbstractParser<T, E extends Error> {
                 current = this.peek(false);
                 this.next(false);
             }
+            
+            isQuoted = true;
         }
-        else if (!asQuoted) {
+        else {
             const SYMBOLS: Set<string> = this.getInvalidSymbolsInUnquotedString();
 
             while (!this.getWhitespace().has(current) && !stoppers.includes(current)) {
@@ -227,7 +251,10 @@ export abstract class AbstractParser<T, E extends Error> {
 
                 sb += current;
                 if (this.isOver()) {
-                    return sb;
+                    return {
+                        isQuoted: false,
+                        value: sb
+                    };
                 }
                 current = this.peek(false);
                 this.next(false);
@@ -235,12 +262,14 @@ export abstract class AbstractParser<T, E extends Error> {
 
             // どうしようこいつ
             this.cursor--;
-        }
-        else {
-            throw this.exception("string() の実行に失敗しました: asQuoted=true に反しています: " + sb);
+
+            isQuoted = false;
         }
 
-        return sb.toString();
+        return {
+            value: sb,
+            isQuoted
+        };
     }
 
     protected bool(): boolean {

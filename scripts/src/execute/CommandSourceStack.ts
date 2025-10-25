@@ -3,7 +3,7 @@ import { DualAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { CommandSender, Origin } from "./CommandSender";
 import { MinecraftDimensionTypes } from "../lib/@minecraft/vanilla-data/lib/index";
 
-export type AnchorType = "eyes" | "feet";
+export type EntityAnchor = "eyes" | "feet";
 
 export class CommandSourceStack {
     private readonly sender: CommandSender<Origin>;
@@ -20,17 +20,7 @@ export class CommandSourceStack {
 
     public constructor(sender: CommandSender<Origin> = CommandSender.getWorldSender()) {
         this.sender = sender;
-
-        this.setDimension(this.sender.getDimension());
-        this.setRotation(this.sender.getRotation());
-
-        if (this.sender.origin instanceof Entity) {
-            this.setExecutor(this.sender.origin);
-            this.setPosition(this.sender.origin);
-        }
-        else {
-            this.setPosition(this.sender.getPosition());
-        }
+        sender.writeOut(this);
     }
 
     public getSender(): CommandSender<Origin> {
@@ -92,8 +82,8 @@ export class CommandSourceStack {
         return stack;
     }
 
-    public applyAnchor(type: AnchorType): void {
-        if (type === "eyes" && this.positionSource) {
+    public applyAnchor(entityAnchor: EntityAnchor): void {
+        if (entityAnchor === "eyes" && this.positionSource) {
             this.position.y += this.positionSource.getHeadLocation().y - this.positionSource.location.y;
         }
 

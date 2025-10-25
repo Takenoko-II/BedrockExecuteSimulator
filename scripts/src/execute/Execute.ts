@@ -1,4 +1,4 @@
-import { CommandSourceStack, AnchorType } from "./CommandSourceStack";
+import { CommandSourceStack, EntityAnchor } from "./CommandSourceStack";
 import { Align, Anchored, As, At, Facing, FacingEntity, IfBlock, IfBlocks, IfEntity, IfScoreCompare, IfScoreMatches, In, Positioned, PositionedAs, Rotated, RotatedAs, ScanMode, SubCommand, UnlessBlock, UnlessBlocks, UnlessEntity, UnlessScoreCompare, UnlessScoreMatches } from "./SubCommand";
 import { AxesReader } from "./arguments/AxesReader";
 import { DimensionTypes, world } from "@minecraft/server";
@@ -23,7 +23,7 @@ interface IRotated {
 interface IFacing {
     readonly $: (position: string) => Execute;
 
-    readonly entity: (selector: string, anchor: AnchorType) => Execute;
+    readonly entity: (selector: string, anchor: EntityAnchor) => Execute;
 }
 
 interface IGuardSubCommand {
@@ -114,7 +114,7 @@ export class Execute {
         return this;
     }
 
-    public anchored(anchor: AnchorType): Execute {
+    public anchored(anchor: EntityAnchor): Execute {
         this.subCommands.push(new Anchored(anchor));
         return this;
     }

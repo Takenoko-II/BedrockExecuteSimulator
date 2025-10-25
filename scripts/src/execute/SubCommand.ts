@@ -1,7 +1,7 @@
-import { CommandSourceStack, AnchorType } from "./CommandSourceStack";
+import { CommandSourceStack, EntityAnchor } from "./CommandSourceStack";
 import { Axis } from "./arguments/AxesReader";
 import { Vector3Builder } from "../util/Vector";
-import { Dimension, DimensionType, UnloadedChunksError, Vector3 } from "@minecraft/server";
+import { Dimension, UnloadedChunksError, Vector3 } from "@minecraft/server";
 import { BlockInfo } from "./arguments/BlockReader";
 import { MinecraftBlockTypes } from "../lib/@minecraft/vanilla-data/lib/index";
 import { ScoreAccess, ScoreComparator } from "./arguments/ScoreAccess";
@@ -171,17 +171,17 @@ export class Facing extends RedirectableSubCommand {
 }
 
 export class FacingEntity extends ForkableSubCommand {
-    private readonly anchorType: AnchorType;
+    private readonly entityAnchor: EntityAnchor;
 
-    public constructor(selector: EntitySelector, anchorType: AnchorType) {
+    public constructor(selector: EntitySelector, anchorType: EntityAnchor) {
         super(selector);
-        this.anchorType = anchorType;
+        this.entityAnchor = anchorType;
     }
 
     public fork(stack: CommandSourceStack): CommandSourceStack[] {
         return this.selector.getEntities(stack).map(entity => {
             return stack.clone(css => {
-                const to = this.anchorType === "eyes" ? entity.getHeadLocation() : entity.location;
+                const to = this.entityAnchor === "eyes" ? entity.getHeadLocation() : entity.location;
                 const dir = css.getPosition().getDirectionTo(to);
                 css.setRotation(dir.getRotation2d());
             });
@@ -234,15 +234,15 @@ export class In extends RedirectableSubCommand {
 }
 
 export class Anchored extends RedirectableSubCommand {
-    private readonly anchorType: AnchorType;
+    private readonly entityAnchor: EntityAnchor;
 
-    public constructor(anchorType: AnchorType) {
+    public constructor(entityanchor: EntityAnchor) {
         super();
-        this.anchorType = anchorType;
+        this.entityAnchor = entityanchor;
     }
 
     public redirect(stack: CommandSourceStack): CommandSourceStack {
-        return stack.clone(css => css.applyAnchor(this.anchorType));
+        return stack.clone(css => css.applyAnchor(this.entityAnchor));
     }
 
     public toString(): string {

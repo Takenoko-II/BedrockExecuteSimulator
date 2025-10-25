@@ -11,9 +11,9 @@ import { PositionVectorResolver, VectorComponent, VectorComponentModel, VectorCo
 interface SelectorType {
     readonly aliveOnly: boolean;
 
-    readonly sortOrder: keyof typeof SelectorSortOrder;
+    readonly sortOrder: SelectorSortOrder;
 
-    readonly default?: SelectorDefaultParameters;
+    readonly traits: SelectorTraits;
 }
 
 interface TypeSpecific {
@@ -22,7 +22,7 @@ interface TypeSpecific {
     readonly overridable: boolean;
 }
 
-interface SelectorDefaultParameters {
+interface SelectorTraits {
     readonly typeSpecific?: TypeSpecific;
 
     readonly limit?: number;
@@ -727,7 +727,7 @@ export class EntitySelector {
         this.positionVectorResolver = selectorArguments.getPositionVectorResolver();
 
         const c = selectorArguments.getAsDirectValue("c");
-        if (selectorType.default?.limit === 1) {
+        if (selectorType.traits.limit === 1) {
             this.isSingle = c === undefined || c === 1 || c === -1;
         }
         else {
@@ -817,12 +817,12 @@ export class EntitySelector {
             }
         }
 
-        if (this.selectorType.default?.typeSpecific) {
-            if (this.selectorType.default.typeSpecific.overridable) {
-                entities = entities.filter(entity => entity.typeId === this.selectorType.default?.typeSpecific?.type);
+        if (this.selectorType.traits.typeSpecific) {
+            if (this.selectorType.traits.typeSpecific.overridable) {
+                entities = entities.filter(entity => entity.typeId === this.selectorType.traits.typeSpecific?.type);
             }
             else if ((entityQueryOptions.type === undefined && entityQueryOptions.excludeTypes === undefined)) {
-                entities = entities.filter(entity => entity.typeId === this.selectorType.default?.typeSpecific?.type);
+                entities = entities.filter(entity => entity.typeId === this.selectorType.traits.typeSpecific?.type);
             }
         }
 
@@ -853,12 +853,12 @@ export class EntitySelector {
 
             entities.splice(Math.abs(c));
         }
-        else if (this.selectorType.default?.limit !== undefined) {
-            entities.splice(this.selectorType.default.limit);
+        else if (this.selectorType.traits.limit !== undefined) {
+            entities.splice(this.selectorType.traits.limit);
         }
 
-        if (this.selectorType.default?.processor) {
-            entities = this.selectorType.default.processor(stack, entities);
+        if (this.selectorType.traits.processor) {
+            entities = this.selectorType.traits.processor(stack, entities);
         }
 
         return entities;
@@ -889,7 +889,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
             register("@s", {
                 aliveOnly: false,
                 sortOrder: SelectorSortOrder.NEAREST,
-                default: {
+                traits: {
                     limit: 1,
                     processor(stack, entities) {
                         if (!stack.hasExecutor()) return [];
@@ -900,7 +900,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
             register("@p", {
                 aliveOnly: true,
                 sortOrder: SelectorSortOrder.NEAREST,
-                default: {
+                traits: {
                     typeSpecific: {
                         type: MinecraftEntityTypes.Player,
                         overridable: false
@@ -911,7 +911,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
             register("@r", {
                 aliveOnly: true,
                 sortOrder: SelectorSortOrder.RANDOM,
-                default: {
+                traits: {
                     typeSpecific: {
                         type: MinecraftEntityTypes.Player,
                         overridable: true
@@ -922,7 +922,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
             register("@a", {
                 aliveOnly: false,
                 sortOrder: SelectorSortOrder.NEAREST,
-                default: {
+                traits: {
                     typeSpecific: {
                         type: MinecraftEntityTypes.Player,
                         overridable: false
@@ -931,12 +931,13 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
             });
             register("@e", {
                 aliveOnly: true,
-                sortOrder: SelectorSortOrder.NEAREST
+                sortOrder: SelectorSortOrder.NEAREST,
+                traits: {}
             });
             register("@n", {
                 aliveOnly: true,
                 sortOrder: SelectorSortOrder.NEAREST,
-                default: {
+                traits: {
                     limit: 1
                 }
             });
@@ -1149,13 +1150,13 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
             value = this.list();
         }
         else {
-            value = this.string(false, ',', '}', ']');
+            value = this.string(true, ',', '}', ']').value;
         }
         return value;
     }
 
     private pair(): { readonly key: string; readonly isInverted: boolean; readonly value: unknown } {
-        const key = this.string(false, '=');
+        const key = this.unquotedString(true, '=');
         this.expect(true, '=');
 
         let isInverted = false;
@@ -1195,7 +1196,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
 
     private multiMap(braces: readonly [string, string]): SelectorArgumentInputMap {
         const map: SelectorArgumentInputMap = {};
-        
+
         if (!this.next(true, braces[0])) {
             return map;
         }
@@ -1283,7 +1284,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
                 {
                     aliveOnly: false,
                     sortOrder: SelectorSortOrder.NEAREST,
-                    default: {
+                    traits: {
                         limit: 1,
                         typeSpecific: {
                             type: MinecraftEntityTypes.Player,

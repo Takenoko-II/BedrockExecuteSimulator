@@ -1,6 +1,7 @@
 import { Block, Dimension, Entity, world, World } from "@minecraft/server";
 import { DualAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { MinecraftDimensionTypes } from "../lib/@minecraft/vanilla-data/lib/index";
+import { CommandSourceStack } from "./CommandSourceStack";
 
 export type Origin = Entity | Block | World;
 
@@ -17,6 +18,8 @@ export abstract class CommandSender<T extends Origin> {
 
     public abstract getRotation(): DualAxisRotationBuilder;
 
+    public abstract writeOut(stack: CommandSourceStack): void;
+
     private static EntityCommandSender = class extends CommandSender<Entity> {
         public constructor(entity: Entity) {
             super(entity);
@@ -32,6 +35,13 @@ export abstract class CommandSender<T extends Origin> {
 
         public getRotation(): DualAxisRotationBuilder {
             return DualAxisRotationBuilder.from(this.origin.getRotation())
+        }
+
+        public override writeOut(stack: CommandSourceStack): void {
+            stack.setDimension(this.getDimension());
+            stack.setRotation(this.getRotation());
+            stack.setPosition(this.origin);
+            stack.setExecutor(this.origin);
         }
     }
 
@@ -51,6 +61,13 @@ export abstract class CommandSender<T extends Origin> {
         public getRotation(): DualAxisRotationBuilder {
             return DualAxisRotationBuilder.zero();
         }
+
+        public override writeOut(stack: CommandSourceStack): void {
+            stack.setDimension(this.getDimension());
+            stack.setRotation(this.getRotation());
+            stack.setPosition(this.getPosition());
+            stack.setExecutor(undefined);
+        }
     }
 
     private static WorldCommandSender = class extends CommandSender<World> {
@@ -68,6 +85,13 @@ export abstract class CommandSender<T extends Origin> {
 
         public getRotation(): DualAxisRotationBuilder {
             return DualAxisRotationBuilder.zero();
+        }
+
+        public override writeOut(stack: CommandSourceStack): void {
+            stack.setDimension(this.getDimension());
+            stack.setRotation(this.getRotation());
+            stack.setPosition(this.getPosition());
+            stack.setExecutor(undefined);
         }
     }
 
