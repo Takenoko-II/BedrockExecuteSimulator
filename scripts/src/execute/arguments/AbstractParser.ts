@@ -72,10 +72,10 @@ export abstract class AbstractParser<T, E extends Error> {
 
         let current: string = this.peekChar();
         while (this.getWhitespace().has(current)) {
+            this.nextChar();
             if (this.isOver()) {
                 break;
             }
-            this.nextChar();
             current = this.peekChar();
         }
     }

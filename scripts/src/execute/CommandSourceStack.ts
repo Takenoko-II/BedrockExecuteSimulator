@@ -126,7 +126,11 @@ export class CommandSourceStack {
     }
 
     public runCommand(command: string): CommandResult {
-        const commandString: string = `execute in ${this.dimension.id.replace("minecraft:", "")} positioned ${this.position.format("$x $y $z", 4)} rotated ${this.rotation.format("$yaw $pitch", 4)} run ${command}`;
+        if (command.trim().startsWith("execute")) {
+            throw new Error("CommandSourceStack#runCommand(string) は実行文脈を完全に変換できないゆえの挙動を秘匿するために、 execute コマンドの実行を禁止しています");
+        }
+
+        const commandString: string = `execute in ${this.dimension.id.replace("minecraft:", "")} positioned ${this.position.format("$x $y $z", 4)} rotated ${this.rotation.format("$yaw $pitch", 4)} run ${command.trim()}`;
 
         return this.hasExecutor()
             ? this.getExecutor().runCommand(commandString)

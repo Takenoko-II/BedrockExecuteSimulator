@@ -1,5 +1,4 @@
 import { CommandSourceStack, EntityAnchor } from "./CommandSourceStack";
-import { Axis } from "./arguments/AxesReader";
 import { Vector3Builder } from "../util/Vector";
 import { Dimension, UnloadedChunksError, Vector3 } from "@minecraft/server";
 import { MinecraftBlockTypes } from "../lib/@minecraft/vanilla-data/lib/index";
@@ -7,6 +6,7 @@ import { ScoreAccess, ScoreComparator } from "./arguments/ScoreAccess";
 import { EntitySelector } from "./arguments/EntitySelector";
 import { PositionVectorResolver, RotationVectorResolver } from "./arguments/VectorParser";
 import { BlockPredicate } from "./arguments/BlockPredicateParser";
+import { AxisSet } from "./arguments/AxisSetParser";
 
 export type ScanMode = "all" | "masked";
 
@@ -194,20 +194,18 @@ export class FacingEntity extends ForkableSubCommand {
 }
 
 export class Align extends RedirectableSubCommand {
-    private readonly axes: ReadonlySet<Axis>;
+    private readonly axisSet: AxisSet;
 
-    public constructor(axes: ReadonlySet<Axis>) {
+    public constructor(axisSet: AxisSet) {
         super();
-        this.axes = axes;
+        this.axisSet = axisSet;
     }
 
     public redirect(stack: CommandSourceStack): CommandSourceStack {
         return stack.clone(css => {
             const pos = css.getPosition();
-
-            if (this.axes.has('x')) pos.x = Math.floor(pos.x);
-            if (this.axes.has('y')) pos.y = Math.floor(pos.y);
-            if (this.axes.has('z')) pos.z = Math.floor(pos.z);
+            this.axisSet.floor(pos);
+            css.setPosition(pos);
         });
     }
 

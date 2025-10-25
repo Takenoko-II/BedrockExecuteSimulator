@@ -2,12 +2,12 @@ import { Vector3 } from "@minecraft/server";
 import { AbstractParser } from "./AbstractParser";
 
 export class AxisSet {
-    public constructor(private readonly set: ReadonlySet<string>) {}
+    public constructor(private readonly chars: ReadonlySet<string>) {}
 
     public apply(vector3: Vector3, callbackFn: (component: number) => number): void {
-        if (this.set.has('x')) vector3.x = callbackFn(vector3.x);
-        if (this.set.has('y')) vector3.y = callbackFn(vector3.y);
-        if (this.set.has('z')) vector3.z = callbackFn(vector3.z);
+        if (this.chars.has('x')) vector3.x = callbackFn(vector3.x);
+        if (this.chars.has('y')) vector3.y = callbackFn(vector3.y);
+        if (this.chars.has('z')) vector3.z = callbackFn(vector3.z);
     }
 
     public floor(vector3: Vector3): void {
@@ -45,6 +45,8 @@ export class AxisSetParser extends AbstractParser<AxisSet, AxisSetParseError> {
             throw this.exception("x, y, z以外の文字は無効です");
         }
 
+        this.next(false);
+
         return char;
     }
 
@@ -77,5 +79,9 @@ export class AxisSetParser extends AbstractParser<AxisSet, AxisSetParseError> {
         this.finish();
 
         return new AxisSet(set);
+    }
+
+    public static readAxisSet(input: string): AxisSet {
+        return new AxisSetParser(input).parse();
     }
 }

@@ -99,12 +99,12 @@ world.afterEvents.itemUse.subscribe(event => {
 - 選択される複数のエンティティの位置が一致していた場合のID順ソート
 - 実行文脈の遷移の視覚化機能
 
-## その他TODO
-- `BlockReader`, `AxesReader` を`AbstractParser`ベースに書き換える
-
 ## 実装上の留意点 (BEのコマンドの忘れがちカス仕様メモ)
 
 ### エンティティセレクタ
 - セレクタ引数 `m=` は反転であっても重複できない
 - Map(オブジェクト) を値にとるセレクタ引数はすべて重複を許可し、意味の重複するものは最後の入力を使う
 - NPC内のコマンドにおいてセレクタ `@initiator` は `execute run` のあとに使用することはできない(エンティティを返さない)
+
+### 実行文脈
+- `CommandSourceStack` の「位置ソース」または「目の高さ」に相当する情報をコマンドのそれに変換できない仕様のため、同クラスの `runCommand(string)` は `execute` コマンドの実行を禁止する

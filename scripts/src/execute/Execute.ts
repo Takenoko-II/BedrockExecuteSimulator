@@ -1,12 +1,12 @@
 import { CommandSourceStack, EntityAnchor } from "./CommandSourceStack";
 import { Align, Anchored, As, At, Facing, FacingEntity, IfBlock, IfBlocks, IfEntity, IfScoreCompare, IfScoreMatches, In, Positioned, PositionedAs, Rotated, RotatedAs, ScanMode, SubCommand, UnlessBlock, UnlessBlocks, UnlessEntity, UnlessScoreCompare, UnlessScoreMatches } from "./SubCommand";
-import { AxesReader } from "./arguments/AxesReader";
 import { DimensionTypes, world } from "@minecraft/server";
 import { ScoreAccess, ScoreComparator } from "./arguments/ScoreAccess";
 import { EntitySelectorParser } from "./arguments/EntitySelector";
 import { sentry } from "../lib/TypeSentry";
 import { VectorParser } from "./arguments/VectorParser";
 import { BlockPredicateParser } from "./arguments/BlockPredicateParser";
+import { AxisSetParser } from "./arguments/AxisSetParser";
 
 interface IPositioned {
     readonly $: (position: string) => Execute;
@@ -98,8 +98,8 @@ export class Execute {
         }
     }
 
-    public align(axes: string): Execute {
-        this.subCommands.push(new Align(AxesReader.readAxes(axes)));
+    public align(axisSet: string): Execute {
+        this.subCommands.push(new Align(AxisSetParser.readAxisSet(axisSet)));
         return this;
     }
 
