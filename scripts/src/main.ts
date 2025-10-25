@@ -1,11 +1,11 @@
 import { world } from "@minecraft/server";
-import { Execute, Fork } from "./execute/Execute";
+import { Execute } from "./execute/Execute";
 import { CommandSourceStack, EntityAnchor } from "./execute/CommandSourceStack";
 import { CommandSender } from "./execute/CommandSender";
-import { EntitySelectorParser } from "./execute/arguments/EntitySelector";
-import { BlockPredicateParser } from "./execute/arguments/BlockPredicateParser";
-import { AxisSetParser } from "./execute/arguments/AxisSetParser";
+import { BlockPredicateParser } from "./execute/arguments//block/BlockPredicateParser";
 import { Vector3Builder } from "./util/Vector";
+import { AxisSetParser } from "./execute/arguments/axis/AxisSetParser";
+import { Fork } from "./execute/ExecuteForkIterator";
 
 world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) => {
     if (id !== "minecraft:armor_stand") return;
@@ -46,5 +46,4 @@ world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) =>
  * TODO
  * MapLike引数内の余計なキーを弾き忘れてる
  * 古い順ソートテスト
- * AxesReaderをAbstractParserに置換
  */

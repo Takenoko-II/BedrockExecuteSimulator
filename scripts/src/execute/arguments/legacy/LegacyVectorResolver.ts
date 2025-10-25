@@ -1,8 +1,8 @@
 // もう使わない
 
-import { CommandSourceStack } from "../CommandSourceStack";
-import { DualAxisRotationBuilder, TripleAxisRotationBuilder, Vector3Builder } from "../../util/Vector";
-import { sentry, TypeModel } from "../../lib/TypeSentry";
+import { CommandSourceStack } from "../../CommandSourceStack";
+import { DualAxisRotationBuilder, TripleAxisRotationBuilder, Vector3Builder } from "../../../util/Vector";
+import { sentry, TypeModel } from "../../../lib/TypeSentry";
 
 /**
  * @deprecated

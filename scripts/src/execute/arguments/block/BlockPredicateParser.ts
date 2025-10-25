@@ -1,17 +1,6 @@
-import { Block, BlockPermutation, BlockStates, BlockType, BlockTypes } from "@minecraft/server";
-import { AbstractParser } from "./AbstractParser";
-
-export class BlockPredicate {
-    public constructor(private readonly type: BlockType, private readonly states: Record<string, string | number | boolean>) {}
-
-    public matches(block: Block) {
-        return block.permutation.matches(this.type.id, this.states);
-    }
-
-    public toBlockPermutation(): BlockPermutation {
-        return BlockPermutation.resolve(this.type.id, this.states);
-    }
-}
+import { BlockStates, BlockType, BlockTypes } from "@minecraft/server";
+import { AbstractParser } from "../AbstractParser";
+import { BlockPredicate } from "./BlockPredicate";
 
 export class BlockParseError extends Error {}
 

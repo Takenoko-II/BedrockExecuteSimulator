@@ -1,12 +1,12 @@
 // もう使わない
 
 import { Dimension, DimensionTypes, Entity, EntityQueryOptions, GameMode, InputPermissionCategory, Player, Vector3, world } from "@minecraft/server";
-import { CommandSourceStack } from "../CommandSourceStack";
-import { MinecraftEntityTypes } from "../../lib/@minecraft/vanilla-data/lib/index";
-import { Vector3Builder } from "../../util/Vector";
+import { CommandSourceStack } from "../../CommandSourceStack";
+import { MinecraftEntityTypes } from "../../../lib/@minecraft/vanilla-data/lib/index";
+import { Vector3Builder } from "../../../util/Vector";
 import { LegacyPositionVectorResolver, LegacyVectorComponent, LegacyVectorParseError, LegacyVectorReader } from "./LegacyVectorResolver";
 import { LegacyMapParseError, LegacyMapReader } from "./LegacyMapReader";
-import { IntRange } from "../../util/NumberRange";
+import { IntRange } from "../../../util/NumberRange";
 
 /**
  * @deprecated

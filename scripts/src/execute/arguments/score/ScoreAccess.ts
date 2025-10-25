@@ -1,7 +1,8 @@
 import { world } from "@minecraft/server";
-import { IntRange } from "../../util/NumberRange";
-import { CommandSourceStack } from "../CommandSourceStack";
-import { EntitySelector, EntitySelectorInterpretError, EntitySelectorParser } from "./EntitySelector";
+import { IntRange } from "../../../util/NumberRange";
+import { CommandSourceStack } from "../../CommandSourceStack";
+import { EntitySelector } from "../selector/EntitySelector";
+import { EntitySelectorInterpretError, EntitySelectorParser } from "../selector/EntitySelectorParser";
 
 export type ScoreHolder = EntitySelector | string;
 
