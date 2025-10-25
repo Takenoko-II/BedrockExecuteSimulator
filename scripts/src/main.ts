@@ -36,6 +36,5 @@ world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) =>
  * TODO
  * MapLike引数内の余計なキーを弾き忘れてる
  * 古い順ソートテスト
- * Reader系をAbstractParserに置換
- * EntitySelector.pair()のキー読み取りがクォートを許可してしまう(Abstparsr.str()がわるい)
+ * AxesReaderをAbstractParserに置換
  */

@@ -14,6 +14,10 @@ export abstract class AbstractParser<T, E extends Error> {
         return this.cursor >= this.text.length;
     }
 
+    protected isOnlyWhitespaceRemaining(): boolean {
+        return this.isOver() || [...this.text.slice(this.cursor)].every(s => this.getWhitespace().has(s));
+    }
+
     private peekChar(): string {
         if (this.isOver()) {
             throw this.exception("peek() の実行に失敗しました: isOver");
