@@ -8,6 +8,8 @@ export type ScoreHolder = EntitySelector | string;
 
 export type ScoreComparator = '<' | '>' | '<=' | '>=' | '=';
 
+export type Matches = "matches";
+
 export class ScoreAccess {
     private readonly scoreHolder: ScoreHolder;
 
@@ -46,17 +48,17 @@ export class ScoreAccess {
 
     public test(stack: CommandSourceStack, comparator: ScoreComparator, other: ScoreAccess): boolean;
 
-    public test(stack: CommandSourceStack, comparator: "matches", range: string): boolean;
+    public test(stack: CommandSourceStack, comparator: Matches, range: IntRange): boolean;
 
-    public test(stack: CommandSourceStack, comparator: ScoreComparator | "matches", other: ScoreAccess | string): boolean {
+    public test(stack: CommandSourceStack, comparator: ScoreComparator | Matches, other: ScoreAccess | IntRange): boolean {
         const valueA = this.getValue(stack);
 
         if (valueA === undefined) {
             return false;
         }
 
-        if (typeof other === "string") {
-            return IntRange.parse(other, true).within(valueA);
+        if (other instanceof IntRange) {
+            return other.within(valueA);
         }
         else {
             const valueB = other.getValue(stack);

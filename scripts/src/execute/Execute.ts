@@ -1,7 +1,6 @@
 import { CommandSourceStack, EntityAnchor } from "./CommandSourceStack";
 import { DimensionTypes, world } from "@minecraft/server";
 import { ScoreAccess, ScoreComparator } from "./arguments/score/ScoreAccess";
-import { sentry } from "../lib/TypeSentry";
 import { BlockPredicateParser } from "./arguments//block/BlockPredicateParser";
 import { AxisSetParser } from "./arguments//axis/AxisSetParser";
 import { EntitySelectorParser } from "./arguments/selector/EntitySelectorParser";
@@ -238,7 +237,6 @@ export class Execute {
     }
 
     public buildIterator(): ExecuteForkIterator {
-        return new ExecuteForkIterator(this.root.clone(), this.subCommands);
+        return new ExecuteForkIterator(this.root.clone(), [...this.subCommands]);
     }
 }
-

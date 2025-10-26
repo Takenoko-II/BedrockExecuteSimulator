@@ -1,3 +1,4 @@
+import { Entity } from "@minecraft/server";
 import { EntitySelector } from "../arguments/selector/EntitySelector";
 import { PositionVectorResolver } from "../arguments/vector/PositionVectorResolver";
 import { CommandSourceStack, EntityAnchor } from "../CommandSourceStack";
@@ -11,11 +12,13 @@ export class Facing extends RedirectableSubCommand {
         this.posVecResolver = posVecResolver;
     }
 
-    public redirect(stack: CommandSourceStack): CommandSourceStack {
-        return stack.clone(css => {
-            const dir = css.getPosition().getDirectionTo(this.posVecResolver.resolve(stack));
-            css.setRotation(dir.getRotation2d());
-        });
+    public redirect(stack: CommandSourceStack): void {
+        const dir = stack.getPosition().getDirectionTo(this.posVecResolver.resolve(stack));
+        stack.setRotation(dir.getRotation2d());
+    }
+
+    public getPositionvectorResolver(): PositionVectorResolver {
+        return this.posVecResolver;
     }
 
     public toString(): string {
@@ -26,19 +29,19 @@ export class Facing extends RedirectableSubCommand {
 export class FacingEntity extends ForkableSubCommand {
     private readonly entityAnchor: EntityAnchor;
 
-    public constructor(selector: EntitySelector, anchorType: EntityAnchor) {
+    public constructor(selector: EntitySelector, entityAnchor: EntityAnchor) {
         super(selector);
-        this.entityAnchor = anchorType;
+        this.entityAnchor = entityAnchor;
     }
 
-    public fork(stack: CommandSourceStack): CommandSourceStack[] {
-        return this.selector.getEntities(stack).map(entity => {
-            return stack.clone(css => {
-                const to = this.entityAnchor === "eyes" ? entity.getHeadLocation() : entity.location;
-                const dir = css.getPosition().getDirectionTo(to);
-                css.setRotation(dir.getRotation2d());
-            });
-        });
+    public override fork(stack: CommandSourceStack, entity: Entity): void {
+        const to = this.entityAnchor === "eyes" ? entity.getHeadLocation() : entity.location;
+        const dir = stack.getPosition().getDirectionTo(to);
+        stack.setRotation(dir.getRotation2d());
+    }
+
+    public getEntityAnchor(): EntityAnchor {
+        return this.entityAnchor;
     }
 
     public toString(): string {

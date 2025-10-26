@@ -1,42 +1,33 @@
 import { world } from "@minecraft/server";
 import { Execute } from "./execute/Execute";
-import { Vector3Builder } from "./util/Vector";
-import { AxisSetParser } from "./execute/arguments/axis/AxisSetParser";
-import { Fork } from "./execute/ExecuteForkIterator";
+import { MinecraftItemTypes } from "./lib/@minecraft/vanilla-data/lib/index";
+import { ExecuteForkIteratorResult } from "./execute/ExecuteForkIterator";
+import { CommandSourceStack } from "./execute/CommandSourceStack";
+import { CommandSender } from "./execute/CommandSender";
 
 world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) => {
-    if (id !== "minecraft:armor_stand") return;
+    if (id !== MinecraftItemTypes.Stick) return;
 
-    new Execute().as("@e[type=armor_stand]").run(stack => {
-        world.scoreboard.getObjective("a")!.setScore(stack.getExecutor(), 0);
-    });
+    new Execute().as("@e[type=armor_stand]").run("scoreboard players set @s a 0")
 
-    const execute: Execute = new Execute();
+    const execute = new Execute(new CommandSourceStack(CommandSender.getEntitySender(source)))
+        .as("@e[type=armor_stand, scores={a=0}]").at("@e[type=armor_stand, scores={a=0}]").positioned.$("~ ~10 ~").facing.entity("@s", "feet").positioned.$("^ ^ ^5");
 
-    execute.as("@e[type=armor_stand,scores={a=0}]").at("@e[type=armor_stand,scores={a=0}]");
+    new Execute().as("@a").at("@s").positioned.$("0.0 0.0 0.0").positioned.$("^^^-2").positioned.$("~~ 0.0").positioned.$("^^^1").facing.$("0.0 0.0 0.0")
+    .facing.$("^^^-1").positioned.as("@s").run("particle minecraft:basic_flame_particle ^ ^ ^2")
 
-    const iter = execute.buildIterator();
+    const iterator = execute.buildIterator();
 
-    let result: IteratorResult<Fork, Fork>;
+    let result: ExecuteForkIteratorResult;
     do {
-        result = iter.next();
-        if (result.value.final && result.value.stack) {
-            world.scoreboard.getObjective("a")!.addScore(result.value.stack.getExecutor(), 1);
-        }
+        result = iterator.next();
+
+        result.run(stack => {
+            world.scoreboard.getObjective("a")!.addScore(stack.getExecutor(), 1);
+            stack.getDimension().spawnParticle("minecraft:basic_flame_particle", stack.getPosition());
+        });
     }
     while (!result.done);
-
-    new Execute().as("  @e[type=armor_stand]  ").at("@s").if.block("  ~~-0.1  ~ ", "wool  [\"color\"   =\"green\"]   ").align("xz").run(s => {
-        s.getDimension().spawnParticle("minecraft:mobflame_single", s.getPosition());
-    })
-
-    const v = Vector3Builder.zero();
-
-    AxisSetParser.readAxisSet("   zy ").apply(v, c => {
-        return 1;
-    });
-
-    console.log(v);
 });
 
 /**

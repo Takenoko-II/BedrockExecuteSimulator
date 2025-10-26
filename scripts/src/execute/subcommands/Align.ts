@@ -10,12 +10,14 @@ export class Align extends RedirectableSubCommand {
         this.axisSet = axisSet;
     }
 
-    public redirect(stack: CommandSourceStack): CommandSourceStack {
-        return stack.clone(css => {
-            const pos = css.getPosition();
-            this.axisSet.floor(pos);
-            css.setPosition(pos);
-        });
+    public redirect(stack: CommandSourceStack): void {
+        const pos = stack.getPosition();
+        this.axisSet.floor(pos);
+        stack.setPosition(pos);
+    }
+
+    public getAxisSet(): AxisSet {
+        return this.axisSet;
     }
 
     public toString(): string {

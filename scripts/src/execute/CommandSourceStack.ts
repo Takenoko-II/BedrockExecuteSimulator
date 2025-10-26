@@ -5,6 +5,8 @@ import { MinecraftDimensionTypes } from "../lib/@minecraft/vanilla-data/lib/inde
 
 export type EntityAnchor = "eyes" | "feet";
 
+export class CommandContextEmptyError extends Error {}
+
 export class CommandSourceStack {
     private readonly sender: CommandSender<Origin>;
 
@@ -29,13 +31,13 @@ export class CommandSourceStack {
 
     public getExecutor(): Entity {
         if (this.executor === undefined) {
-            throw new Error("実行者が存在しません");
+            throw new CommandContextEmptyError("実行者が存在しません");
         }
 
         return this.executor;
     }
 
-    public getExecutorOrNull(): Entity | undefined {
+    public getNullableExecutor(): Entity | undefined {
         return this.executor;
     }
 
@@ -55,8 +57,20 @@ export class CommandSourceStack {
         return this.dimension;
     }
 
-    public getPositionSource(): Entity | undefined {
+    public getPositionSource(): Entity {
+        if (this.positionSource === undefined) {
+            throw new CommandContextEmptyError("位置ソースが存在しません");
+        }
+
         return this.positionSource;
+    }
+
+    public getNullablePositionSource(): Entity | undefined {
+        return this.positionSource;
+    }
+
+    public hasPositionSource(): boolean {
+        return this.positionSource !== undefined;
     }
 
     public clone(): CommandSourceStack;

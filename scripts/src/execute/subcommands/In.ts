@@ -10,8 +10,12 @@ export class In extends RedirectableSubCommand {
         this.dimension = dimension;
     }
 
-    public redirect(stack: CommandSourceStack): CommandSourceStack {
-        return stack.clone(css => css.setDimension(this.dimension));
+    public redirect(stack: CommandSourceStack): void {
+        stack.setDimension(this.dimension);
+    }
+
+    public getDimension(): Dimension {
+        return this.dimension;
     }
 
     public toString(): string {

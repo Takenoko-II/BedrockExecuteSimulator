@@ -1,3 +1,4 @@
+import { Entity } from "@minecraft/server";
 import { EntitySelector } from "../arguments/selector/EntitySelector";
 import { CommandSourceStack } from "../CommandSourceStack";
 import { ForkableSubCommand } from "./AbstractSubCommand";
@@ -7,14 +8,10 @@ export class At extends ForkableSubCommand {
         super(selector);
     }
 
-    public override fork(stack: CommandSourceStack): CommandSourceStack[] {
-        return this.selector.getEntities(stack).map(entity => {
-            return stack.clone(css => {
-                css.setDimension(entity.dimension);
-                css.setPosition(entity);
-                css.setRotation(entity.getRotation());
-            });
-        });
+    public override fork(stack: CommandSourceStack, entity: Entity): void {
+        stack.setDimension(entity.dimension);
+        stack.setPosition(entity);
+        stack.setRotation(entity.getRotation());
     }
 
     public toString(): string {

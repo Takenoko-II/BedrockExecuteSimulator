@@ -1,3 +1,4 @@
+import { Entity } from "@minecraft/server";
 import { EntitySelector } from "../arguments/selector/EntitySelector";
 import { RotationVectorResolver } from "../arguments/vector/RotationVectorResolver";
 import { CommandSourceStack } from "../CommandSourceStack";
@@ -11,8 +12,12 @@ export class Rotated extends RedirectableSubCommand {
         this.rotVecResolver = rotVecResolver;
     }
 
-    public redirect(stack: CommandSourceStack): CommandSourceStack {
-        return stack.clone(css => css.setRotation(this.rotVecResolver.resolve(css)));
+    public redirect(stack: CommandSourceStack): void {
+        stack.setRotation(this.rotVecResolver.resolve(stack));
+    }
+
+    public getRotationVectorResolver(): RotationVectorResolver {
+        return this.rotVecResolver;
     }
 
     public toString(): string {
@@ -25,10 +30,8 @@ export class RotatedAs extends ForkableSubCommand {
         super(selector);
     }
 
-    public fork(stack: CommandSourceStack): CommandSourceStack[] {
-        return this.selector.getEntities(stack).map(entity => {
-            return stack.clone(css => css.setRotation(entity));
-        });
+    public override fork(stack: CommandSourceStack, entity: Entity): void {
+        stack.setRotation(entity);
     }
 
     public toString(): string {

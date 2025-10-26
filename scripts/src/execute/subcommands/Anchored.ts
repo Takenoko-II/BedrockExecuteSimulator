@@ -9,8 +9,12 @@ export class Anchored extends RedirectableSubCommand {
         this.entityAnchor = entityanchor;
     }
 
-    public redirect(stack: CommandSourceStack): CommandSourceStack {
-        return stack.clone(css => css.applyAnchor(this.entityAnchor));
+    public redirect(stack: CommandSourceStack): void {
+        stack.applyAnchor(this.entityAnchor);
+    }
+
+    public getEntityAnchor(): EntityAnchor {
+        return this.entityAnchor;
     }
 
     public toString(): string {

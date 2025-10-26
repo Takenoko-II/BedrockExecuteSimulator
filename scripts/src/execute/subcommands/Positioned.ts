@@ -1,3 +1,4 @@
+import { Entity } from "@minecraft/server";
 import { EntitySelector } from "../arguments/selector/EntitySelector";
 import { PositionVectorResolver } from "../arguments/vector/PositionVectorResolver";
 import { CommandSourceStack } from "../CommandSourceStack";
@@ -11,8 +12,12 @@ export class Positioned extends RedirectableSubCommand {
         this.posVecResolver = posVecResolver;
     }
 
-    public redirect(stack: CommandSourceStack): CommandSourceStack {
-        return stack.clone(css => css.setPosition(this.posVecResolver.resolve(css)));
+    public redirect(stack: CommandSourceStack): void {
+        stack.setPosition(this.posVecResolver.resolve(stack));
+    }
+
+    public getPositionVectorResolver(): PositionVectorResolver {
+        return this.posVecResolver;
     }
 
     public toString(): string {
@@ -25,10 +30,8 @@ export class PositionedAs extends ForkableSubCommand {
         super(selector);
     }
 
-    public fork(stack: CommandSourceStack): CommandSourceStack[] {
-        return this.selector.getEntities(stack).map(entity => {
-            return stack.clone(css => css.setPosition(entity));
-        });
+    public override fork(stack: CommandSourceStack, entity: Entity): void {
+        stack.setPosition(entity);
     }
 
     public toString(): string {

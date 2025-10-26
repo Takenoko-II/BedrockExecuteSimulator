@@ -7,19 +7,24 @@ import { PositionVectorResolver } from "../arguments/vector/PositionVectorResolv
 import { CommandSourceStack } from "../CommandSourceStack";
 import { GuardableSubCommand } from "./AbstractSubCommand";
 import { ScoreAccess, ScoreComparator } from "../arguments/score/ScoreAccess";
+import { IntRange } from "../../util/NumberRange";
 
 export type ScanMode = "all" | "masked";
 
 export class IfEntity extends GuardableSubCommand {
-    private readonly selector: EntitySelector;
+    private readonly entitySelector: EntitySelector;
 
-    public constructor(selector: EntitySelector) {
+    public constructor(entitySelector: EntitySelector) {
         super();
-        this.selector = selector;
+        this.entitySelector = entitySelector;
     }
 
     public test(stack: CommandSourceStack): boolean {
-        return this.selector.getEntities(stack).length > 0;
+        return this.entitySelector.getEntities(stack).length > 0;
+    }
+
+    public getEntitySelector(): EntitySelector {
+        return this.entitySelector;
     }
 
     public toString(): string {
@@ -47,6 +52,14 @@ export class IfBlock extends GuardableSubCommand {
         catch (e) {
             return false;
         }
+    }
+
+    public getPositionVectorResolver(): PositionVectorResolver {
+        return this.posVecResolver;
+    }
+
+    public getBlockPredicate(): BlockPredicate {
+        return this.blockPredicate;
     }
 
     public toString(): string {
@@ -117,6 +130,22 @@ export class IfBlocks extends GuardableSubCommand {
         }
     }
 
+    public getStartPositionVectorResolver(): PositionVectorResolver {
+        return this.startPosResolver;
+    }
+
+    public getEndPositionVectorResolver(): PositionVectorResolver {
+        return this.endPosResolver;
+    }
+
+    public getDestinationPositionVectorResolver(): PositionVectorResolver {
+        return this.destPosResolver;
+    }
+
+    public getScanMode(): ScanMode {
+        return this.scanMode;
+    }
+
     public toString(): string {
         return "if blocks";
     }
@@ -140,6 +169,18 @@ export class IfScoreCompare extends GuardableSubCommand {
         return this.scoreA.test(stack, this.comparator, this.scoreB);
     }
 
+    public getLeftScoreAccess(): ScoreAccess {
+        return this.scoreA;
+    }
+
+    public getRightScoreAccess(): ScoreAccess {
+        return this.scoreB;
+    }
+
+    public getScoreComparator(): ScoreComparator {
+        return this.comparator;
+    }
+
     public toString(): string {
         return "if score";
     }
@@ -148,16 +189,24 @@ export class IfScoreCompare extends GuardableSubCommand {
 export class IfScoreMatches extends GuardableSubCommand {
     private readonly score: ScoreAccess;
 
-    private readonly range: string;
+    private readonly range: IntRange;
 
     public constructor(score: ScoreAccess, range: string) {
         super();
         this.score = score;
-        this.range = range;
+        this.range = IntRange.parse(range, true);
     }
 
     public test(stack: CommandSourceStack): boolean {
         return this.score.test(stack, "matches", this.range);
+    }
+
+    public getScoreAccess(): ScoreAccess {
+        return this.score;
+    }
+
+    public getRange(): IntRange {
+        return this.range;
     }
 
     public toString(): string {
