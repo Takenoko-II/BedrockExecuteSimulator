@@ -83,11 +83,15 @@ export class CommandSourceStack {
             return;
         }
 
-        if (entityAnchor === "eyes") {
-            this.position = Vector3Builder.from(this.position.getHeadLocation());
-        }
-        else {
-            this.position = Vector3Builder.from(this.position.location);
+        switch (entityAnchor) {
+            case "eyes": {
+                this.position = Vector3Builder.from(this.position.getHeadLocation());
+                break;
+            }
+            case "feet": {
+                this.position = Vector3Builder.from(this.position.location);
+                break;
+            }
         }
     }
 
