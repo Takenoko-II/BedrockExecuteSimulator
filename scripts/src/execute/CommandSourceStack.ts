@@ -14,11 +14,9 @@ export class CommandSourceStack {
 
     private dimension: Dimension = world.getDimension(MinecraftDimensionTypes.Overworld);
 
-    private readonly position: Vector3Builder = Vector3Builder.zero();
+    private position: Vector3Builder | Entity = Vector3Builder.zero();
 
-    private readonly rotation: DualAxisRotationBuilder = DualAxisRotationBuilder.zero();
-
-    private positionSource: Entity | undefined = undefined;
+    private rotation: DualAxisRotationBuilder = DualAxisRotationBuilder.zero();
 
     public constructor(sender: CommandSender<Origin> = CommandSender.getWorldSender()) {
         this.sender = sender;
@@ -46,7 +44,11 @@ export class CommandSourceStack {
     }
 
     public getPosition(): Vector3Builder {
-        return this.position.clone();
+        return this.position instanceof Entity ? Vector3Builder.from(this.position.location) : this.position.clone();
+    }
+
+    public getRawPosition(): Vector3Builder | Entity {
+        return this.position;
     }
 
     public getRotation(): DualAxisRotationBuilder {
@@ -57,22 +59,6 @@ export class CommandSourceStack {
         return this.dimension;
     }
 
-    public getPositionSource(): Entity {
-        if (this.positionSource === undefined) {
-            throw new CommandContextEmptyError("位置ソースが存在しません");
-        }
-
-        return this.positionSource;
-    }
-
-    public getNullablePositionSource(): Entity | undefined {
-        return this.positionSource;
-    }
-
-    public hasPositionSource(): boolean {
-        return this.positionSource !== undefined;
-    }
-
     public clone(): CommandSourceStack;
 
     public clone(modifier: (newStack: CommandSourceStack) => void): CommandSourceStack;
@@ -81,13 +67,9 @@ export class CommandSourceStack {
         const stack = new CommandSourceStack(this.sender);
 
         stack.executor = this.executor;
-        stack.position.x = this.position.x;
-        stack.position.y = this.position.y;
-        stack.position.z = this.position.z;
-        stack.rotation.yaw = this.rotation.yaw;
-        stack.rotation.pitch = this.rotation.pitch;
+        stack.position = this.position;
+        stack.rotation = this.rotation;
         stack.dimension = this.dimension;
-        stack.positionSource = this.positionSource;
 
         if (modifier !== undefined) {
             modifier(stack);
@@ -97,11 +79,16 @@ export class CommandSourceStack {
     }
 
     public applyAnchor(entityAnchor: EntityAnchor): void {
-        if (entityAnchor === "eyes" && this.positionSource) {
-            this.position.y += this.positionSource.getHeadLocation().y - this.positionSource.location.y;
+        if (!(this.position instanceof Entity)) {
+            return;
         }
 
-        this.positionSource = undefined;
+        if (entityAnchor === "eyes") {
+            this.position = Vector3Builder.from(this.position.getHeadLocation());
+        }
+        else {
+            this.position = Vector3Builder.from(this.position.location);
+        }
     }
 
     public setExecutor(executor: Entity | undefined): void {
@@ -110,16 +97,10 @@ export class CommandSourceStack {
 
     public setPosition(source: Entity | Vector3): void {
         if (source instanceof Entity) {
-            this.position.x = source.location.x;
-            this.position.y = source.location.y;
-            this.position.z = source.location.z;
-            this.positionSource = source;
+            this.position = source;
         }
         else {
-            this.position.x = source.x;
-            this.position.y = source.y;
-            this.position.z = source.z;
-            this.positionSource = undefined;
+            this.position = Vector3Builder.from(source);
         }
     }
 
@@ -144,14 +125,28 @@ export class CommandSourceStack {
             throw new Error("CommandSourceStack#runCommand(string) は実行文脈を完全に変換できないゆえの挙動を秘匿するために、 execute コマンドの実行を禁止しています");
         }
 
-        const commandString: string = `execute in ${this.dimension.id.replace("minecraft:", "")} positioned ${this.position.format("$x $y $z", 4)} rotated ${this.rotation.format("$yaw $pitch", 4)} run ${command.trim()}`;
+        if (this.position instanceof Entity) {
+            this.position.addTag("XXX");
 
-        return this.hasExecutor()
-            ? this.getExecutor().runCommand(commandString)
-            : this.getDimension().runCommand(commandString);
+            const commandString = `execute in ${this.dimension.id.replace("minecraft:", "")} rotated ${this.rotation.format("$yaw $pitch", 4)} positioned as @n[tag=XXX] run ${command.trim()}`;
+            const result = this.hasExecutor()
+                ? this.getExecutor().runCommand(commandString)
+                : this.getDimension().runCommand(commandString);
+
+            this.position.removeTag("XXX");
+
+            return result;
+        }
+        else {
+            const commandString: string = `execute in ${this.dimension.id.replace("minecraft:", "")} rotated ${this.rotation.format("$yaw $pitch", 4)} positioned ${this.position.format("$x $y $z", 4)} run ${command.trim()}`;
+        
+            return this.hasExecutor()
+                ? this.getExecutor().runCommand(commandString)
+                : this.getDimension().runCommand(commandString);
+        }
     }
 
     public toString() {
-        return `CommandSourceStack { sender=${this.sender.origin.toString()}, executor=${(this.executor?.nameTag ?? this.executor?.typeId) ?? "null"}, position={ xyz=${this.position}, source=${this.positionSource} }, rotation=${this.rotation}, dimension=${this.dimension.id} }`
+        return `CommandSourceStack { sender=${this.sender.origin.toString()}, executor=${(this.executor?.nameTag ?? this.executor?.typeId) ?? "null"}, position=${this.position}, rotation=${this.rotation}, dimension=${this.dimension.id} }`
     }
 }
