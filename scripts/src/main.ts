@@ -29,7 +29,9 @@ world.afterEvents.itemUse.subscribe(({ source, itemStack: { type: { id } } }) =>
     }
     while (!result.done);
 
-    new Execute().at("@p").anchored("eyes").run("particle minecraft:basic_flame_particle ^ ^ ^1")
+    new Execute().if.block("~~~", "air[]")
+
+    new Execute().at("@p").positioned.$("~~~").anchored("eyes").run("particle minecraft:basic_flame_particle ^ ^ ^1");
 });
 
 /**

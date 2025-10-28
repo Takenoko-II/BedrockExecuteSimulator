@@ -5,6 +5,7 @@
 
 ## executeコマンドの仕様解説集
 - ### [エンティティアンカーの仕組み](/mds/EntityAnchor.md)
+- ### [サブコマンドの分類](/mds/SubCommand.md)
 
 ## 実装済みの機能
 
@@ -63,7 +64,7 @@ while (!result.done);
 ```
 
 ### 4. パーサの使用
-エンティティセレクタパーサ, 座標入力パーサなどを単体で利用可能
+エンティティセレクタパーサ, ブロック条件パーサ, 座標入力パーサなどを単体で利用可能
 
 ```ts
 import { Entity } from "@minecraft/server";
@@ -93,7 +94,7 @@ world.afterEvents.itemUse.subscribe(event => {
         const block = ctx.getDimension().getBlock(ctx.getPosition())!;
         block.setType(MinecraftBlockTypes.DiamondBlock);
 
-        console.log(ctx.getExecutor().nameTag, ctx.getPositionSource(), ctx.getRotation());
+        console.log(ctx.getExecutor().nameTag, ctx.getRotation());
     });
 });
 ```
@@ -111,7 +112,6 @@ world.afterEvents.itemUse.subscribe(event => {
 ### エンティティセレクタ
 - セレクタ引数 `m=` は反転であっても重複できない
 - Map(オブジェクト) を値にとるセレクタ引数はすべて重複を許可し、意味の重複するものは最後の入力を使う
-- NPC内のコマンドにおいてセレクタ `@initiator` は `execute run` のあとに使用することはできない(エンティティを返さない)
 
 ### 実行文脈
 - `CommandSourceStack` の「位置ソース」または「目の高さ」に相当する情報をコマンドのそれに変換できない仕様のため、同クラスの `runCommand(string)` は `execute` コマンドの実行を禁止する

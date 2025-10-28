@@ -1,8 +1,9 @@
 import { Entity } from "@minecraft/server";
 import { EntitySelector } from "../arguments/selector/EntitySelector";
 import { PositionVectorResolver } from "../arguments/vector/PositionVectorResolver";
-import { CommandSourceStack, EntityAnchor } from "../CommandSourceStack";
+import { CommandSourceStack } from "../CommandSourceStack";
 import { ForkableSubCommand, RedirectableSubCommand } from "./AbstractSubCommand";
+import { EntityAnchorType } from "./Anchored";
 
 export class Facing extends RedirectableSubCommand {
     private readonly posVecResolver: PositionVectorResolver;
@@ -27,9 +28,9 @@ export class Facing extends RedirectableSubCommand {
 }
 
 export class FacingEntity extends ForkableSubCommand {
-    private readonly entityAnchor: EntityAnchor;
+    private readonly entityAnchor: EntityAnchorType;
 
-    public constructor(selector: EntitySelector, entityAnchor: EntityAnchor) {
+    public constructor(selector: EntitySelector, entityAnchor: EntityAnchorType) {
         super(selector);
         this.entityAnchor = entityAnchor;
     }
@@ -40,7 +41,7 @@ export class FacingEntity extends ForkableSubCommand {
         stack.setRotation(dir.getRotation2d());
     }
 
-    public getEntityAnchor(): EntityAnchor {
+    public getEntityAnchor(): EntityAnchorType {
         return this.entityAnchor;
     }
 

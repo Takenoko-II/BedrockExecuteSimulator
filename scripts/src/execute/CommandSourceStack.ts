@@ -2,8 +2,8 @@ import { CommandResult, Dimension, Entity, Vector2, Vector3, world } from "@mine
 import { DualAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { CommandSender, Origin } from "./CommandSender";
 import { MinecraftDimensionTypes } from "../lib/@minecraft/vanilla-data/lib/index";
-
-export type EntityAnchor = "eyes" | "feet";
+import { EntityAnchor, EntityAnchorType } from "./subcommands/Anchored";
+import { Random } from "../util/Random";
 
 export class CommandContextEmptyError extends Error {}
 
@@ -78,21 +78,8 @@ export class CommandSourceStack {
         return stack;
     }
 
-    public applyAnchor(entityAnchor: EntityAnchor): void {
-        if (!(this.position instanceof Entity)) {
-            return;
-        }
-
-        switch (entityAnchor) {
-            case "eyes": {
-                this.position = Vector3Builder.from(this.position.getHeadLocation());
-                break;
-            }
-            case "feet": {
-                this.position = Vector3Builder.from(this.position.location);
-                break;
-            }
-        }
+    public applyAnchor(entityAnchorType: EntityAnchorType): void {
+        this.position = EntityAnchor.get(entityAnchorType).transform(this.position);
     }
 
     public setExecutor(executor: Entity | undefined): void {
@@ -125,19 +112,17 @@ export class CommandSourceStack {
     }
 
     public runCommand(command: string): CommandResult {
-        if (command.trim().startsWith("execute")) {
-            throw new Error("CommandSourceStack#runCommand(string) は実行文脈を完全に変換できないゆえの挙動を秘匿するために、 execute コマンドの実行を禁止しています");
-        }
-
         if (this.position instanceof Entity) {
-            this.position.addTag("XXX");
+            const temporaryTag: string = "COMMAND_SOURCE_STACK_POSITION_ENTITY_" + Random.uInt32();
+
+            this.position.addTag(temporaryTag);
 
             const commandString = `execute in ${this.dimension.id.replace("minecraft:", "")} rotated ${this.rotation.format("$yaw $pitch", 4)} positioned as @n[tag=XXX] run ${command.trim()}`;
             const result = this.hasExecutor()
                 ? this.getExecutor().runCommand(commandString)
                 : this.getDimension().runCommand(commandString);
 
-            this.position.removeTag("XXX");
+            this.position.removeTag(temporaryTag);
 
             return result;
         }

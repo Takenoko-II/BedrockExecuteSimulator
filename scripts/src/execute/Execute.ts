@@ -1,4 +1,4 @@
-import { CommandSourceStack, EntityAnchor } from "./CommandSourceStack";
+import { CommandSourceStack } from "./CommandSourceStack";
 import { DimensionTypes, world } from "@minecraft/server";
 import { ScoreAccess, ScoreComparator } from "./arguments/score/ScoreAccess";
 import { BlockPredicateParser } from "./arguments//block/BlockPredicateParser";
@@ -14,7 +14,7 @@ import { Rotated, RotatedAs } from "./subcommands/Rotated";
 import { Facing, FacingEntity } from "./subcommands/Facing";
 import { Align } from "./subcommands/Align";
 import { In } from "./subcommands/In";
-import { Anchored } from "./subcommands/Anchored";
+import { Anchored, EntityAnchorType } from "./subcommands/Anchored";
 import { UnlessBlock, UnlessBlocks, UnlessEntity, UnlessScoreCompare, UnlessScoreMatches } from "./subcommands/Unless";
 import { ExecuteForkIterator } from "./ExecuteForkIterator";
 
@@ -33,7 +33,7 @@ interface IRotated {
 interface IFacing {
     readonly $: (position: string) => Execute;
 
-    readonly entity: (selector: string, anchor: EntityAnchor) => Execute;
+    readonly entity: (selector: string, anchor: EntityAnchorType) => Execute;
 }
 
 interface IGuardSubCommand {
@@ -124,7 +124,7 @@ export class Execute {
         return this;
     }
 
-    public anchored(anchor: EntityAnchor): Execute {
+    public anchored(anchor: EntityAnchorType): Execute {
         this.subCommands.push(new Anchored(anchor));
         return this;
     }
