@@ -1,17 +1,14 @@
 import { EntityQueryOptions, EntityQueryPropertyOptions, EntityQueryScoreOptions, GameMode } from "@minecraft/server";
 import { sentry } from "../../../lib/TypeSentry";
-import { EntitySelectorArgumentTypeMap, HasItem, HasPermission, InvertibleValue } from "./SelectorArgumentType";
+import { EntitySelectorArgumentTypeMap, InvertibleValue } from "./SelectorArgumentType";
 import { IntRange } from "../../../util/NumberRange";
-import { EntitySelectorInterpretError } from "./EntitySelectorParser";
 import { VectorComponent, VectorComponentType } from "../vector/AbstractVectorResolver";
 import { PositionVectorResolver } from "../vector/PositionVectorResolver";
 
 export type SelectorArgumentInputMap = Record<string, InvertibleValue[]>;
 
 export class SelectorArguments {
-    public constructor(private readonly argumentInputMap: SelectorArgumentInputMap) {
-        this.checkNonQueryArguments();
-    }
+    public constructor(private readonly argumentInputMap: SelectorArgumentInputMap) {}
 
     public getAsInvertibleList<K extends keyof EntitySelectorArgumentTypeMap>(key: K): ({ readonly isInverted: boolean; readonly value: EntitySelectorArgumentTypeMap[K] })[] | undefined {
         if (!(key in this.argumentInputMap)) {
@@ -36,69 +33,6 @@ export class SelectorArguments {
 
     public hasAnyOf<K extends keyof EntitySelectorArgumentTypeMap>(...keys: K[]): boolean {
         return keys.some(k => k in this.argumentInputMap);
-    }
-
-    private checkNonQueryArguments() {
-        if (this.hasAnyOf("haspermission")) {
-            const permissions = this.getAsDirectValue("haspermission")!;
-
-            if (Object.keys(permissions).length === 0) {
-                throw new EntitySelectorInterpretError("セレクタ引数 'haspermission' は空のMapを受け取りません");
-            }
-
-            for (const __name__ of Object.keys(permissions)) {
-                const name = __name__ as keyof HasPermission;
-                const values = permissions[name as keyof HasPermission]!;
-
-                for (const { isInverted } of values) {
-                    if (isInverted) {
-                        throw new EntitySelectorInterpretError("セレクタ引数 haspermission' のキーは反転できません'");
-                    }
-                }
-            }
-        }
-
-        if (this.hasAnyOf("hasitem")) {
-            const hasItem = this.getAsDirectValue("hasitem")!;
-            const conditions: HasItem[] = Array.isArray(hasItem) ? hasItem : [hasItem];
-
-            for (const condition of conditions) {
-                if (condition.item.some(item => item.isInverted)) {
-                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.item' は反転できません");
-                }
-
-                const effectiveItem = condition.item[condition.item.length - 1];
-
-                if (effectiveItem.isInverted) {
-                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.item' は反転できません")
-                }
-
-                const effectiveLocation = condition.location ? condition.location[condition.location.length - 1] : undefined;
-
-                if (effectiveLocation?.isInverted) {
-                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.location' は反転できません")
-                }
-
-                const effectiveSlot = condition.slot ? condition.slot[condition.slot.length - 1] : undefined;
-
-                if (effectiveSlot?.isInverted) {
-                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.slot' は反転できません")
-                }
-                
-                // なんとquantityは上書き
-                const effectiveQuantity = condition.quantity ? condition.quantity[condition.quantity.length - 1] : undefined;
-
-                if (effectiveQuantity?.isInverted) {
-                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.quantity' は反転できません")
-                }
-
-                const effectiveData = condition.data ? condition.data[condition.data.length - 1] : undefined;
-
-                if (effectiveData?.isInverted) {
-                    throw new EntitySelectorInterpretError("サブセレクタ引数 'hasitem.data' は反転できません")
-                }
-            }
-        }
     }
 
     public getQueryOptionsBase(): EntityQueryOptions {
@@ -134,9 +68,7 @@ export class SelectorArguments {
             const propertyOptionsList: EntityQueryPropertyOptions[] = [];
             const properties = this.getAsDirectValue("has_property")!;
 
-            if (Object.keys(properties).length === 0) {
-                throw new EntitySelectorInterpretError("セレクタ引数 'has_property' は空のMapを受け取りません");
-            }
+            // if (Object.keys(properties).length === 0)... 空Map判定は型チェックにおまかせ！
 
             for (const [identifier, propertyNamesOrFlags] of Object.entries(properties)) {
                 if (identifier === "property") {
@@ -262,9 +194,7 @@ export class SelectorArguments {
             const scoreOptionsList: EntityQueryScoreOptions[] = [];
             const scores = this.getAsDirectValue("scores")!!;
 
-            if (Object.keys(scores).length === 0) {
-                throw new EntitySelectorInterpretError("セレクタ引数 'scores' は空のMapを受け取りません");
-            }
+            // if (Object.keys(scores).length === 0) 空Mapチェックは型チェックにおまかせ！
 
             for (const [name, score] of Object.entries(scores)) {
                 for (const cond of score) {

@@ -121,7 +121,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
         this.expect(true, '[');
 
         if (this.next(true, ']')) {
-            return list;
+            throw this.exception("空のListは無効です")
         }
 
         while (!this.isOver()) {
@@ -147,7 +147,7 @@ export class EntitySelectorParser extends AbstractParser<EntitySelector, EntityS
         }
 
         if (this.next(true, braces[1])) {
-            throw this.exception("空のセレクタ引数は無効です");
+            throw this.exception("空のMapは無効です");
         }
 
         while (!this.isOver()) {

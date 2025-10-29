@@ -2,7 +2,7 @@ import { MinecraftEntityTypes } from "../../../lib/@minecraft/vanilla-data/lib/i
 import { sentry } from "../../../lib/TypeSentry";
 import { Registries, RegistryKey } from "../../../util/Registry";
 import { VectorComponentModel } from "../vector/AbstractVectorResolver";
-import { GameModeLikeModel, HasItemModel, HasPermissionModel, HasPropertyModel, ScoresModel, SelectorArgumentDuplicationRule, SelectorArgumentType } from "./SelectorArgumentType";
+import { SelectorArgumentDuplicationRule, SelectorArgumentType, SelectorArgumentTypes } from "./SelectorArgumentType";
 import { SelectorSortOrder, SelectorType } from "./SelectorType";
 
 export const ENTITY_SELECTOR_TYPES = RegistryKey.create<string, SelectorType>();
@@ -95,20 +95,20 @@ export const ENTITY_SELECTOR_REGISTRIES = new Registries()
         register("has_property", {
             invertible: false,
             duplicatable: SelectorArgumentDuplicationRule.NEVER,
-            type: HasPropertyModel
+            type: SelectorArgumentTypes.HasPropertyModel
         });
         register("hasitem", {
             invertible: false,
             duplicatable: SelectorArgumentDuplicationRule.NEVER,
             type: sentry.unionOf(
-                sentry.arrayOf(HasItemModel),
-                HasItemModel
+                sentry.arrayOf(SelectorArgumentTypes.HasItemModel),
+                SelectorArgumentTypes.HasItemModel
             )
         });
         register("haspermission", {
             invertible: false,
             duplicatable: SelectorArgumentDuplicationRule.NEVER,
-            type: HasPermissionModel
+            type: SelectorArgumentTypes.HasPermissionModel
         });
         register("l", {
             invertible: false,
@@ -123,7 +123,7 @@ export const ENTITY_SELECTOR_REGISTRIES = new Registries()
         register("m", {
             invertible: true,
             duplicatable: SelectorArgumentDuplicationRule.NEVER,
-            type: GameModeLikeModel
+            type: SelectorArgumentTypes.GameModeLikeModel
         });
         register("name", {
             invertible: true,
@@ -163,7 +163,7 @@ export const ENTITY_SELECTOR_REGISTRIES = new Registries()
         register("scores", {
             invertible: false,
             duplicatable: SelectorArgumentDuplicationRule.NEVER,
-            type: ScoresModel
+            type: SelectorArgumentTypes.ScoresModel
         });
         register("tag", {
             invertible: true,

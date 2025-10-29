@@ -4,9 +4,10 @@ import { IntRange } from "../../../util/NumberRange";
 import { CommandSourceStack } from "../../CommandSourceStack";
 import { SelectorSortOrder, SelectorType } from "./SelectorType";
 import { SelectorArguments } from "./SelectorArguments";
-import { HasItem, HasPermission, PERMISSION_NAME_INPUT_PERMISSION_CATEGORY_MAP } from "./SelectorArgumentType";
+import { HasItem, HasPermission, SelectorArgumentTypes } from "./SelectorArgumentType";
 import { ENTITY_SELECTOR_REGISTRIES, ENTITY_SELECTOR_TYPES } from "./EntitySelectorRegistries";
 import { PositionVectorResolver } from "../vector/PositionVectorResolver";
+import { Vector3Builder } from "../../../util/Vector";
 
 export class EntitySelector {
     public readonly isSingle: boolean;
@@ -39,7 +40,7 @@ export class EntitySelector {
                         const name = __name__ as keyof HasPermission;
                         const values = permissions[name as keyof HasPermission]!;
 
-                        const isEnabled = entity.inputPermissions.isPermissionCategoryEnabled(PERMISSION_NAME_INPUT_PERMISSION_CATEGORY_MAP[name]);
+                        const isEnabled = entity.inputPermissions.isPermissionCategoryEnabled(SelectorArgumentTypes.getInputPermissionCategory(name));
 
                         for (const { value } of values) {
                             if (isEnabled && value === "disabled") {
@@ -91,6 +92,7 @@ export class EntitySelector {
         entityQueryOptions.location = basePos;
 
         let dimensions: Dimension[];
+        // ディメンション制約チェック
         if (this.selectorArguments.hasAnyOf("dx", "dy", "dz", "r", "rm")) {
             dimensions = [stack.getDimension()];
         }

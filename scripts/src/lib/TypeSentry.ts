@@ -772,6 +772,125 @@ class EnumLikeModel<T extends Record<string, string | number>> extends TypeModel
     }
 }
 
+type IsOptional<T> = T extends NeoOptionalModel<unknown> ? true : false;
+
+type ExtractTypeInObjectOptionableValue<T> = {
+    [K in keyof T as IsOptional<T[K]> extends true ? K : never]?: T[K] extends TypeModel<infer I> ? I : never;
+} & {
+    [K in keyof T as IsOptional<T[K]> extends true ? never : K]: T[K] extends TypeModel<infer I> ? I : never;
+};
+
+class NeoOptionalModel<T> extends TypeModel<T> {
+    private constructor(private readonly type: TypeModel<T>) {
+        super();
+    }
+
+    public override test(x: unknown): x is T {
+        return this.type.test(x);
+    }
+
+    public override toString(): string {
+        return this.type.toString();
+    }
+
+    public static newInstance<const W>(w: TypeModel<W>): NeoOptionalModel<W> {
+        return new NeoOptionalModel(w);
+    }
+}
+
+class NeoObjectModel<T extends Record<string | number | symbol, TypeModel<unknown>>> extends TypeModel<T> {
+    private readonly object: T;
+
+    protected constructor(object: T) {
+        super();
+        this.object = object;
+    }
+
+    public test(x: unknown): x is T {
+        if (typeof x !== "object") return false;
+        if (x === null) return false;
+
+        for (const [key, typeModel] of Object.entries(this.object)) {
+            if (key in x) {
+                const value: unknown = (x as Record<string | number | symbol, unknown>)[key];
+                if (!typeModel.test(value)) return false;
+            }
+            else if (this.object[key] instanceof NeoOptionalModel) {
+                continue;
+            }
+            else {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * オブジェクトが過剰な数のキーを持たない連想配列であることを実行時の検査において追加で要求するインスタンスを新しく生成します。
+     * @returns ランタイム条件付きインスタンス
+     */
+    public exact(): NeoObjectModel<T> {
+        const that = this;
+
+        return new (class extends NeoObjectModel<T> {
+            public override test(x: unknown): x is T {
+                if (that.test(x)) {
+                    for (const key of Object.keys(x as object)) {
+                        if (!(key in that.object)) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+                else return false;
+            }
+        })(this.object);
+    }
+
+    public override toString(): string {
+        let string = "{";
+
+        let first = true;
+        for (const [key, model] of Object.entries(this.object)) {
+            if (!first) {
+                string += "; ";
+            }
+
+            let k: string = key;
+
+            if (key.includes(":")) {
+                k = "\"" + k + "\"";
+            }
+            else if (key.includes("\"")) {
+                k = k.replace(/"/g, "\\\"");
+            }
+
+            string += k;
+
+            if (model instanceof NeoOptionalModel) {
+                string += "?: ";
+            }
+            else {
+                string += ": ";
+            }
+
+            string += model.toString();
+
+            first = false;
+        }
+
+        string += "}";
+
+        return string;
+    }
+
+    public static newInstance<U extends Record<string | number | symbol, TypeModel<unknown>>>(object: U): NeoObjectModel<ExtractTypeInObjectOptionableValue<U>> {
+        return new this(object as unknown as ExtractTypeInObjectOptionableValue<U>);
+    }
+}
+
 /**
  * `TypeSentry`が投げるエラー
  */
@@ -871,6 +990,15 @@ export class TypeSentry {
     }
 
     /**
+     * @link `objectOf()`の改良版
+     * @param object `{キー1: TypeModel, キー2: TypeModel, ...}`の形式で与えられる連想配列
+     * @returns 連想配列型を表現する`TypeModel`
+     */
+    public neoObjectOf<U extends Record<string | number | symbol, TypeModel<unknown>>>(object: U): NeoObjectModel<ExtractTypeInObjectOptionableValue<U>> {
+        return NeoObjectModel.newInstance(object);
+    }
+
+    /**
      * 第一級オブジェクト `array`
      * @param type 配列の要素の型を表現する`TypeModel`
      * @returns 配列型を表現する`TypeModel`
@@ -942,6 +1070,16 @@ export class TypeSentry {
      */
     public optionalOf<U>(type: TypeModel<U>): OptionalModel<U> {
         return OptionalModel.newInstance(type);
+    }
+
+    /**
+     * `optionalOf()`の改良版    
+     * `neoObjectOf()`とセットで使うことで真価を発揮する
+     * @param types `optional`型でラップする型の`TypeModel`
+     * @returns `optional`型を表現する`TypeModel`
+     */
+    public neoOptionalOf<U>(type: TypeModel<U>): NeoOptionalModel<U> {
+        return NeoOptionalModel.newInstance(type);
     }
 
     /**
