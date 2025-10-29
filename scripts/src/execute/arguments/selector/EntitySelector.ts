@@ -8,6 +8,7 @@ import { HasItem, HasPermission, SelectorArgumentTypes } from "./SelectorArgumen
 import { ENTITY_SELECTOR_REGISTRIES, ENTITY_SELECTOR_TYPES } from "./EntitySelectorRegistries";
 import { PositionVectorResolver } from "../vector/PositionVectorResolver";
 import { Vector3Builder } from "../../../util/Vector";
+import { EntitySelectorInterpretError } from "./EntitySelectorParser";
 
 export class EntitySelector {
     public readonly isSingle: boolean;
@@ -26,6 +27,10 @@ export class EntitySelector {
         }
         else {
             this.isSingle = c === 1 || c === -1;
+        }
+
+        if (selectorType.traits.typeSpecific?.overridable === false && selectorArguments.hasAnyOf("type")) {
+            throw new EntitySelectorInterpretError("セレクタ引数 'type' はエンティティ種の強制のないセレクタにのみ適用できます");
         }
     }
 

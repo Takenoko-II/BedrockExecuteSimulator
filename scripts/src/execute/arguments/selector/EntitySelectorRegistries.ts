@@ -1,6 +1,8 @@
+import { Entity } from "@minecraft/server";
 import { MinecraftEntityTypes } from "../../../lib/@minecraft/vanilla-data/lib/index";
 import { sentry } from "../../../lib/TypeSentry";
 import { Registries, RegistryKey } from "../../../util/Registry";
+import { CommandSender } from "../../CommandSender";
 import { VectorComponentModel } from "../vector/AbstractVectorResolver";
 import { SelectorArgumentDuplicationRule, SelectorArgumentType, SelectorArgumentTypes } from "./SelectorArgumentType";
 import { SelectorSortOrder, SelectorType } from "./SelectorType";
@@ -65,6 +67,7 @@ export const ENTITY_SELECTOR_REGISTRIES = new Registries()
                 limit: 1
             }
         });
+        // initiator はつくってない
     })
     .withRegistrar(ENTITY_SELECTOR_ARGUMENT_TYPES, register => {
         register("c", {
