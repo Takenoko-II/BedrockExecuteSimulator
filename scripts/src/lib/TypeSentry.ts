@@ -265,6 +265,9 @@ type ExtractTypeInObjectValue<T> = {
     [K in keyof T]: T[K] extends TypeModel<infer U> ? U : never;
 };
 
+/**
+ * @deprecated
+ */
 class ObjectModel<T> extends TypeModel<T> {
     private readonly object: T;
 
@@ -385,6 +388,9 @@ class ArrayModel<T> extends TypeModel<T[]> {
     }
 }
 
+/**
+ * @deprecated
+ */
 class FunctionModel extends TypeModel<Function> {
     private constructor() {
         super();
@@ -465,7 +471,7 @@ class IntersectionModel<T> extends TypeModel<T> {
     }
 }
 
-class OptionalModel<T> extends TypeModel<T | undefined> {
+class UndefindableModel<T> extends TypeModel<T | undefined> {
     private readonly type: TypeModel<T>;
 
     private constructor(type: TypeModel<T>) {
@@ -479,8 +485,8 @@ class OptionalModel<T> extends TypeModel<T | undefined> {
     }
 
     /**
-     * `optional`を解除し、もとの型の`TypeModel`を返します。
-     * @returns `optional`を解除した型を表現する`TypeModel`インスタンス
+     * `undefindable`を解除し、もとの型の`TypeModel`を返します。
+     * @returns `undefindable`を解除した型を表現する`TypeModel`インスタンス
      */
     public unwrap(): TypeModel<T> {
         return this.type;
@@ -490,7 +496,7 @@ class OptionalModel<T> extends TypeModel<T | undefined> {
         return this.type.toString() + " | undefined";
     }
 
-    public static newInstance<U>(type: TypeModel<U>): OptionalModel<U> {
+    public static newInstance<U>(type: TypeModel<U>): UndefindableModel<U> {
         return new this(type);
     }
 }
@@ -634,6 +640,10 @@ class TupleModel<T extends TypeModel<unknown>[]> extends TypeModel<TypeModelArra
         }
 
         return true;
+    }
+
+    public getModelAt<N extends number>(index: N): T[N] {
+        return this.tuple[index];
     }
 
     public override toString(): string {
@@ -798,7 +808,7 @@ class NeoOptionalModel<T> extends TypeModel<T> {
     }
 }
 
-class NeoObjectModel<T extends Record<string | number | symbol, TypeModel<unknown>>> extends TypeModel<T> {
+class NeoObjectModel<T extends Record<string | number | symbol, TypeModel<unknown>>> extends TypeModel<ExtractTypeInObjectOptionableValue<T>> {
     private readonly object: T;
 
     protected constructor(object: T) {
@@ -806,7 +816,7 @@ class NeoObjectModel<T extends Record<string | number | symbol, TypeModel<unknow
         this.object = object;
     }
 
-    public test(x: unknown): x is T {
+    public test(x: unknown): x is ExtractTypeInObjectOptionableValue<T> {
         if (typeof x !== "object") return false;
         if (x === null) return false;
 
@@ -834,7 +844,7 @@ class NeoObjectModel<T extends Record<string | number | symbol, TypeModel<unknow
         const that = this;
 
         return new (class extends NeoObjectModel<T> {
-            public override test(x: unknown): x is T {
+            public override test(x: unknown): x is ExtractTypeInObjectOptionableValue<T> {
                 if (that.test(x)) {
                     for (const key of Object.keys(x as object)) {
                         if (!(key in that.object)) {
@@ -847,6 +857,10 @@ class NeoObjectModel<T extends Record<string | number | symbol, TypeModel<unknow
                 else return false;
             }
         })(this.object);
+    }
+
+    public getModelOfKey<const K extends keyof T>(key: K): T[K] {
+        return this.object[key];
     }
 
     public override toString(): string {
@@ -886,8 +900,51 @@ class NeoObjectModel<T extends Record<string | number | symbol, TypeModel<unknow
         return string;
     }
 
-    public static newInstance<U extends Record<string | number | symbol, TypeModel<unknown>>>(object: U): NeoObjectModel<ExtractTypeInObjectOptionableValue<U>> {
-        return new this(object as unknown as ExtractTypeInObjectOptionableValue<U>);
+    public static newInstance<U extends Record<string | number | symbol, TypeModel<unknown>>>(object: U): NeoObjectModel<U> {
+        return new this(object);
+    }
+}
+
+type DynamicFunction<A extends unknown[], R> = (...args: A) => R;
+
+type TypeModelsToFunc<A extends TypeModel<unknown>[], R extends TypeModel<unknown>> = DynamicFunction<TypeModelArrayToTuple<A>, R extends TypeModel<infer I> ? I : never>;
+
+class NeoFunctionModel<A extends TypeModel<unknown>[], R extends TypeModel<unknown>> extends TypeModel<TypeModelsToFunc<A, R>> {
+    public constructor(private readonly args: A, private readonly returns: R) {
+        super();
+    }
+
+    public override test(x: unknown): x is TypeModelsToFunc<A, R> {
+        return typeof x === "function";
+    }
+
+    public getArgumentModelAt<const N extends number>(index: N): A[N] {
+        return this.args[index];
+    }
+
+    public getReturnValueModel(): R {
+        return this.returns;
+    }
+
+    public override toString(): string {
+        let s: string = "(";
+
+        let first = true;
+        for (const arg of this.args) {
+            if (!first) s += ", ";
+            s += arg.toString();
+            first = false;
+        }
+
+        s += ") => ";
+
+        s += this.returns;
+
+        return s;
+    }
+
+    public static newInstance<A extends TypeModel<unknown>[], R extends TypeModel<unknown>>(args: A, returns: R): NeoFunctionModel<A, R> {
+        return new NeoFunctionModel(args, returns);
     }
 }
 
@@ -934,6 +991,7 @@ export class TypeSentry {
 
     /**
      * 第一級オブジェクト `function`
+     * @deprecated
      */
     public readonly function: FunctionModel = FunctionModel.INSTANCE;
 
@@ -984,6 +1042,7 @@ export class TypeSentry {
      * 第一級オブジェクト `object`
      * @param object `{キー1: TypeModel, キー2: TypeModel, ...}`の形式で与えられる連想配列
      * @returns 連想配列型を表現する`TypeModel`
+     * @deprecated
      */
     public objectOf<U extends Record<string | number | symbol, TypeModel<unknown>>>(object: U): ObjectModel<ExtractTypeInObjectValue<U>> {
         return ObjectModel.newInstance(object);
@@ -994,7 +1053,7 @@ export class TypeSentry {
      * @param object `{キー1: TypeModel, キー2: TypeModel, ...}`の形式で与えられる連想配列
      * @returns 連想配列型を表現する`TypeModel`
      */
-    public neoObjectOf<U extends Record<string | number | symbol, TypeModel<unknown>>>(object: U): NeoObjectModel<ExtractTypeInObjectOptionableValue<U>> {
+    public structOf<U extends Record<string | number | symbol, TypeModel<unknown>>>(object: U): NeoObjectModel<U> {
         return NeoObjectModel.newInstance(object);
     }
 
@@ -1064,12 +1123,12 @@ export class TypeSentry {
     }
 
     /**
-     * `undefined`との合併型のエイリアス `optional`型 
-     * @param types `optional`型でラップする型の`TypeModel`
-     * @returns `optional`型を表現する`TypeModel`
+     * `undefined`との合併型のエイリアス `undefindable`型 
+     * @param types `undefindable`型でラップする型の`TypeModel`
+     * @returns `undefindable`型を表現する`TypeModel`
      */
-    public optionalOf<U>(type: TypeModel<U>): OptionalModel<U> {
-        return OptionalModel.newInstance(type);
+    public undefindableOf<U>(type: TypeModel<U>): UndefindableModel<U> {
+        return UndefindableModel.newInstance(type);
     }
 
     /**
@@ -1078,7 +1137,7 @@ export class TypeSentry {
      * @param types `optional`型でラップする型の`TypeModel`
      * @returns `optional`型を表現する`TypeModel`
      */
-    public neoOptionalOf<U>(type: TypeModel<U>): NeoOptionalModel<U> {
+    public optionalOf<U>(type: TypeModel<U>): NeoOptionalModel<U> {
         return NeoOptionalModel.newInstance(type);
     }
 
@@ -1117,6 +1176,16 @@ export class TypeSentry {
      */
     public enumLikeOf<U extends Record<string, string | number>>(enumeration: U): EnumLikeModel<U> {
         return EnumLikeModel.newInstance(enumeration);
+    }
+
+    /**
+     * 任意の関数型を表現する型(実行時チェックは当然ない)
+     * @param parameters 引数型の配列
+     * @param returnValue 戻り値の型
+     * @returns 関数型の`TypeModel`
+     */
+    public functionOf<const A extends TypeModel<unknown>[], R extends TypeModel<unknown>>(parameters: A, returnValue: R): NeoFunctionModel<A, R> {
+        return NeoFunctionModel.newInstance(parameters, returnValue);
     }
 }
 

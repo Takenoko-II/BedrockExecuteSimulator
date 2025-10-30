@@ -2,7 +2,7 @@ import { CommandResult, Dimension, Entity, Vector2, Vector3, world } from "@mine
 import { DualAxisRotationBuilder, Vector3Builder } from "../util/Vector";
 import { CommandSender, Origin } from "./CommandSender";
 import { MinecraftDimensionTypes } from "../lib/@minecraft/vanilla-data/lib/index";
-import { EntityAnchor, EntityAnchorType } from "./subcommands/Anchored";
+import { EntityAnchor } from "./subcommands/Anchored";
 import { Random } from "../util/Random";
 
 export class CommandContextEmptyError extends Error {}
@@ -35,7 +35,7 @@ export class CommandSourceStack {
         return this.executor;
     }
 
-    public getNullableExecutor(): Entity | undefined {
+    public getUndefinedableExecutor(): Entity | undefined {
         return this.executor;
     }
 
@@ -44,11 +44,9 @@ export class CommandSourceStack {
     }
 
     public getPosition(): Vector3Builder {
-        return this.position instanceof Entity ? Vector3Builder.from(this.position.location) : this.position.clone();
-    }
-
-    public getRawPosition(): Vector3Builder | Entity {
-        return this.position;
+        return this.position instanceof Entity
+            ? Vector3Builder.from(this.position.location)
+            : this.position.clone();
     }
 
     public getRotation(): DualAxisRotationBuilder {
@@ -61,15 +59,15 @@ export class CommandSourceStack {
 
     public clone(): CommandSourceStack;
 
-    public clone(modifier: (newStack: CommandSourceStack) => void): CommandSourceStack;
+    public clone(modifier: (clone: CommandSourceStack) => void): CommandSourceStack;
 
-    public clone(modifier?: (newStack: CommandSourceStack) => void): CommandSourceStack {
+    public clone(modifier?: (clone: CommandSourceStack) => void): CommandSourceStack {
         const stack = new CommandSourceStack(this.sender);
 
         stack.executor = this.executor;
+        stack.dimension = this.dimension;
         stack.position = this.position;
         stack.rotation = this.rotation;
-        stack.dimension = this.dimension;
 
         if (modifier !== undefined) {
             modifier(stack);
@@ -78,8 +76,8 @@ export class CommandSourceStack {
         return stack;
     }
 
-    public applyAnchor(entityAnchorType: EntityAnchorType): void {
-        this.position = EntityAnchor.get(entityAnchorType).transform(this.position);
+    public applyAnchor(entityAnchor: EntityAnchor): void {
+        this.position = entityAnchor.transform(this.position);
     }
 
     public setExecutor(executor: Entity | undefined): void {

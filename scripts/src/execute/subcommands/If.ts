@@ -111,6 +111,7 @@ export class IfBlocks extends GuardableSubCommand {
                             continue;
                         }
 
+                        // これいけんの？
                         if (block.permutation !== destBlock.permutation) {
                             return false;
                         }

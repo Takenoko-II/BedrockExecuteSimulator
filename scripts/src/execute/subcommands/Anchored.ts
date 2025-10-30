@@ -12,6 +12,10 @@ export abstract class EntityAnchor {
         EntityAnchor.VALUES.set(type, this);
     }
 
+    public getType(): EntityAnchorType {
+        return this.type;
+    }
+
     public abstract transform(position: Vector3Builder | Entity): Vector3Builder;
 
     public static readonly EYES = new class extends EntityAnchor {
@@ -44,18 +48,18 @@ export abstract class EntityAnchor {
 }
 
 export class Anchored extends RedirectableSubCommand {
-    private readonly entityAnchor: EntityAnchorType;
+    private readonly entityAnchor: EntityAnchor;
 
-    public constructor(entityanchor: EntityAnchorType) {
+    public constructor(entityAnchorType: EntityAnchorType) {
         super();
-        this.entityAnchor = entityanchor;
+        this.entityAnchor = EntityAnchor.get(entityAnchorType);
     }
 
     public redirect(stack: CommandSourceStack): void {
         stack.applyAnchor(this.entityAnchor);
     }
 
-    public getEntityAnchorType(): EntityAnchorType {
+    public getEntityAnchor(): EntityAnchor {
         return this.entityAnchor;
     }
 

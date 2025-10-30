@@ -58,7 +58,7 @@ export class ServerFormElementPredicates {
     public static isActionButton(value: unknown): value is ActionButton {
         return sentry.objectOf({
             name: sentry.unionOf(sentry.string, sentry.objectOf({})),
-            iconPath: sentry.optionalOf(sentry.string),
+            iconPath: sentry.undefindableOf(sentry.string),
             callbacks: sentry.setOf(sentry.function),
             tags: sentry.arrayOf(sentry.string),
             type: sentry.string

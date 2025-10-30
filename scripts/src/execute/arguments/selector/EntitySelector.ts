@@ -7,7 +7,6 @@ import { SelectorArguments } from "./SelectorArguments";
 import { HasItem, HasPermission, SelectorArgumentTypes } from "./SelectorArgumentType";
 import { ENTITY_SELECTOR_REGISTRIES, ENTITY_SELECTOR_TYPES } from "./EntitySelectorRegistries";
 import { PositionVectorResolver } from "../vector/PositionVectorResolver";
-import { Vector3Builder } from "../../../util/Vector";
 import { EntitySelectorInterpretError } from "./EntitySelectorParser";
 
 export class EntitySelector {

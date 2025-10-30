@@ -162,7 +162,7 @@ export class SelectorArgumentTypes {
         sentry.literalOf("disabled")
     );
 
-    public static readonly HasPermissionModel: TypeModel<HasPermission> = sentry.objectOf({
+    public static readonly HasPermissionModel: TypeModel<HasPermission> = sentry.structOf({
         camera: sentry.optionalOf(
             sentry.arrayOf(
                 uninvertibleValueOf(
@@ -240,29 +240,29 @@ export class SelectorArgumentTypes {
                 )
             )
         )
-    }) as TypeModel<HasPermission>;
+    }).exact();
 
-    public static readonly HasItemModel: TypeModel<HasItem> = sentry.neoObjectOf({
+    public static readonly HasItemModel: TypeModel<HasItem> = sentry.structOf({
         item: sentry.arrayOf(
             uninvertibleValueOf(
                 sentry.string
             )
         ),
-        location: sentry.neoOptionalOf(
+        location: sentry.optionalOf(
             sentry.arrayOf(
                 uninvertibleValueOf(
                     sentry.string
                 )
             )
         ),
-        slot: sentry.neoOptionalOf(
+        slot: sentry.optionalOf(
             sentry.arrayOf(
                 uninvertibleValueOf(
                     sentry.number.nonNaN().int()
                 )
             )
         ),
-        quantity: sentry.neoOptionalOf(
+        quantity: sentry.optionalOf(
             sentry.arrayOf(
                 sentry.unionOf(
                     uninvertibleValueOf(
@@ -274,7 +274,7 @@ export class SelectorArgumentTypes {
                 )
             )
         ),
-        data: sentry.neoOptionalOf(
+        data: sentry.optionalOf(
             sentry.arrayOf(
                 uninvertibleValueOf(
                     sentry.number.nonNaN().int()
@@ -300,88 +300,88 @@ export class SelectorArgumentTypes {
     /**
      * TODO
      */
-    public static readonly HasPropertyModel: TypeModel<HasProperty> = sentry.neoObjectOf({
-        "minecraft:armadillo_state": sentry.neoOptionalOf(
+    public static readonly HasPropertyModel: TypeModel<HasProperty> = sentry.structOf({
+        "minecraft:armadillo_state": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:can_move": sentry.neoOptionalOf(
+        "minecraft:can_move": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:chest_interaction": sentry.neoOptionalOf(
+        "minecraft:chest_interaction": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:climate_variant": sentry.neoOptionalOf(
+        "minecraft:climate_variant": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:creaking_state": sentry.neoOptionalOf(
+        "minecraft:creaking_state": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:creaking_swaying_ticks": sentry.neoOptionalOf(
+        "minecraft:creaking_swaying_ticks": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:has_flower": sentry.neoOptionalOf(
+        "minecraft:has_flower": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:has_increased_max_health": sentry.neoOptionalOf(
+        "minecraft:has_increased_max_health": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:has_nectar": sentry.neoOptionalOf(
+        "minecraft:has_nectar": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:is_armorable": sentry.neoOptionalOf(
+        "minecraft:is_armorable": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:is_becoming_statue": sentry.neoOptionalOf(
+        "minecraft:is_becoming_statue": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:is_playing_idle_ground_sound": sentry.neoOptionalOf(
+        "minecraft:is_playing_idle_ground_sound": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:is_waxed": sentry.neoOptionalOf(
+        "minecraft:is_waxed": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:oxidation_level": sentry.neoOptionalOf(
+        "minecraft:oxidation_level": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:sound_variant": sentry.neoOptionalOf(
+        "minecraft:sound_variant": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        "minecraft:was_upgraded_to_1_21_100": sentry.neoOptionalOf(
+        "minecraft:was_upgraded_to_1_21_100": sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.boolean)
             )
         ),
-        property: sentry.neoOptionalOf(
+        property: sentry.optionalOf(
             sentry.arrayOf(
                 invertibleValueOf(sentry.unionOf(
                     sentry.literalOf("minecraft:armadillo_state"),
