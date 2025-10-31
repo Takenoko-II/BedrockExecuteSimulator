@@ -603,16 +603,16 @@ class SetModel<T> extends TypeModel<Set<T>> {
     }
 }
 
-class ClassModel<T> extends TypeModel<T> {
-    private constructor(private readonly constructorObject: Function) {
+class ClassModel<T extends abstract new (...args: unknown[]) => unknown> extends TypeModel<InstanceType<T>> {
+    private constructor(private readonly constructorObject: T) {
         super();
     }
 
-    public test(x: unknown): x is T {
+    public test(x: unknown): x is InstanceType<T> {
         return x instanceof this.constructorObject;
     }
 
-    public static newInstance<U extends Function>(constructor: U): ClassModel<U["prototype"]> {
+    public static newInstance<U extends abstract new (...args: unknown[]) => unknown>(constructor: U): ClassModel<U> {
         return new this(constructor);
     }
 
@@ -991,7 +991,8 @@ export class TypeSentry {
 
     /**
      * 第一級オブジェクト `function`
-     * @deprecated
+     * @deprecated コンパイル時チェックを付けました
+     * @see NeoFunctionModel
      */
     public readonly function: FunctionModel = FunctionModel.INSTANCE;
 
@@ -1042,7 +1043,8 @@ export class TypeSentry {
      * 第一級オブジェクト `object`
      * @param object `{キー1: TypeModel, キー2: TypeModel, ...}`の形式で与えられる連想配列
      * @returns 連想配列型を表現する`TypeModel`
-     * @deprecated
+     * @deprecated オプショナルプロパティを正確に表現可能なものに置き換えられました
+     * @see NeoObjectModel
      */
     public objectOf<U extends Record<string | number | symbol, TypeModel<unknown>>>(object: U): ObjectModel<ExtractTypeInObjectValue<U>> {
         return ObjectModel.newInstance(object);
@@ -1133,7 +1135,7 @@ export class TypeSentry {
 
     /**
      * `optionalOf()`の改良版    
-     * `neoObjectOf()`とセットで使うことで真価を発揮する
+     * `structOf()`とセットで使うことで真価を発揮する
      * @param types `optional`型でラップする型の`TypeModel`
      * @returns `optional`型を表現する`TypeModel`
      */
@@ -1155,7 +1157,7 @@ export class TypeSentry {
      * @param constructor クラス(コンストラクタ)オブジェクト
      * @returns 任意のクラス型の`TypeModel`
      */
-    public classOf<U extends Function>(constructor: U): ClassModel<U["prototype"]> {
+    public classOf<U extends abstract new (...args: unknown[]) => unknown>(constructor: U): ClassModel<U> {
         return ClassModel.newInstance(constructor);
     }
 
