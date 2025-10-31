@@ -2,6 +2,10 @@ import { sentry } from "../lib/TypeSentry";
 import { CommandSourceStack } from "./CommandSourceStack";
 import { SubCommand } from "./subcommands/AbstractSubCommand";
 
+export interface ForkIteratorBuildOptions {
+    run?(stack: CommandSourceStack, subCommand: SubCommand): void;
+}
+
 export interface Fork {
     readonly stack: CommandSourceStack | undefined;
 
@@ -16,14 +20,12 @@ interface IteratorDoneDetector<T> {
     readonly fork: T;
 }
 
-export type ExecuteForkIteratorResult = IteratorResult<Fork, Fork> & {
-    run(callbackFn: (stack: CommandSourceStack) => void): void;
-}
+export type ExecuteForkIteratorResult = IteratorResult<Fork, Fork>;
 
 export class ExecuteForkIterator implements Iterator<Fork, Fork, void> {
     private readonly generator: Generator<IteratorDoneDetector<Fork>, boolean, void>
 
-    public constructor(public readonly root: CommandSourceStack, public readonly subCommands: SubCommand[]) {
+    public constructor(public readonly root: CommandSourceStack, public readonly subCommands: SubCommand[], private readonly options: ForkIteratorBuildOptions) {
         this.generator = this.fork(root);
     }
 
@@ -34,14 +36,13 @@ export class ExecuteForkIterator implements Iterator<Fork, Fork, void> {
             throw new Error("シーケンスの最後の値は既に消費されています");
         }
 
+        if (value.fork.final && value.fork.stack && this.options.run) {
+            this.options.run(value.fork.stack, value.fork.subCommand);
+        }
+
         return {
             done: value.likelyToBeDone,
-            value: value.fork,
-            run(callbackFn) {
-                if (value.fork.final && value.fork.stack) {
-                    callbackFn(value.fork.stack);
-                }
-            }
+            value: value.fork
         };
     }
 

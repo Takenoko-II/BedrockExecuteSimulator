@@ -603,16 +603,19 @@ class SetModel<T> extends TypeModel<Set<T>> {
     }
 }
 
-class ClassModel<T extends abstract new (...args: unknown[]) => unknown> extends TypeModel<InstanceType<T>> {
+type ClassLike<T> = (abstract new (...args: unknown[]) => T) | (Function & { readonly prototype: T });
+type InstanceOfClassLike<T extends ClassLike<unknown>> = T extends { readonly prototype: infer I } ? I : never;
+
+class ClassModel<T extends ClassLike<unknown>> extends TypeModel<InstanceOfClassLike<T>> {
     private constructor(private readonly constructorObject: T) {
         super();
     }
 
-    public test(x: unknown): x is InstanceType<T> {
+    public test(x: unknown): x is InstanceOfClassLike<T> {
         return x instanceof this.constructorObject;
     }
 
-    public static newInstance<U extends abstract new (...args: unknown[]) => unknown>(constructor: U): ClassModel<U> {
+    public static newInstance<U extends ClassLike<unknown>>(constructor: U): ClassModel<U> {
         return new this(constructor);
     }
 
@@ -1157,7 +1160,7 @@ export class TypeSentry {
      * @param constructor クラス(コンストラクタ)オブジェクト
      * @returns 任意のクラス型の`TypeModel`
      */
-    public classOf<U extends abstract new (...args: unknown[]) => unknown>(constructor: U): ClassModel<U> {
+    public classOf<U extends ClassLike<unknown>>(constructor: U): ClassModel<U> {
         return ClassModel.newInstance(constructor);
     }
 
@@ -1197,3 +1200,9 @@ export class TypeSentry {
 export const sentry: TypeSentry = (class extends TypeSentry {
     public static readonly INSTANCE: TypeSentry = new this(SYMBOL_FOR_PRIVATE_CONSTRUCTOR);
 }).INSTANCE;
+
+class A {
+    private constructor() {
+
+    }
+}

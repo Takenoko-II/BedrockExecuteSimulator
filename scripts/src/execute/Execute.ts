@@ -16,7 +16,7 @@ import { Align } from "./subcommands/Align";
 import { In } from "./subcommands/In";
 import { Anchored, EntityAnchorType } from "./subcommands/Anchored";
 import { UnlessBlock, UnlessBlocks, UnlessEntity, UnlessScoreCompare, UnlessScoreMatches } from "./subcommands/Unless";
-import { ExecuteForkIterator } from "./ExecuteForkIterator";
+import { ExecuteForkIterator, ForkIteratorBuildOptions } from "./ExecuteForkIterator";
 
 interface IPositioned {
     readonly $: (position: string) => Execute;
@@ -236,7 +236,7 @@ export class Execute {
         }
     }
 
-    public buildIterator(): ExecuteForkIterator {
-        return new ExecuteForkIterator(this.root.clone(), [...this.subCommands]);
+    public buildIterator(options?: ForkIteratorBuildOptions): ExecuteForkIterator {
+        return new ExecuteForkIterator(this.root.clone(), [...this.subCommands], options ?? {});
     }
 }
