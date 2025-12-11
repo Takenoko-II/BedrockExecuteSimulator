@@ -1,0 +1,17 @@
+{
+    "name": "ts-dev-template",
+    "private": true,
+    "devDependencies": {
+        "@types/bun": "latest"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "dependencies": {
+        "@minecraft/vanilla-data": "^1.21.130"
+    },
+    "type": "module",
+    "scripts": {
+        "build": "tsc --noEmit && bun build.ts"
+    }
+}

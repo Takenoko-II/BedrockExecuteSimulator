@@ -1,22 +1,43 @@
 {
-    "include": ["scripts/src/"],
-    "exclude": ["scripts/src/lib/@minecraft"],
     "compilerOptions": {
-        "allowJs": true,
-        "checkJs": true,
-        "module": "ES2022",
-        "target": "es2022",
-        "moduleResolution": "node",
+        "allowJs": false,
+        "checkJs": false,
+        "module": "es2022",
+        "target": "es2024",
+        "moduleResolution": "bundler",
         "esModuleInterop": true,
+        "declaration": true,
+        "skipLibCheck": true,
+
         "strict": true,
         "noImplicitOverride": true,
         "exactOptionalPropertyTypes": true,
         "allowUnusedLabels": false,
         "allowUnreachableCode": false,
         "noImplicitReturns": true,
-        // "noUnusedParameters": true,
+        "noUnusedParameters": true,
         // "noUnusedLocals": true,
-        "rootDir": "scripts/src",
-        "outDir": "scripts/dest"
-    }
+        "noUncheckedIndexedAccess": true,
+        "noFallthroughCasesInSwitch": false,
+        "noPropertyAccessFromIndexSignature": false, // これやるとRecordがReflect.get()でしか使えなくなる件
+
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "./src/*"
+            ],
+            "@typesentry": [
+                "./src/libs/TypeSentry.ts"
+            ],
+            "@utils/*": [
+                "./src/utils/*"
+            ],
+            "@ui-wrapper": [
+                "./src/libs/UI-2.0.ts"
+            ]
+        }
+    },
+    "include": [
+        "src"
+    ]
 }

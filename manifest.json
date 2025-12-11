@@ -5,7 +5,7 @@
         "name": "BedrockExecuteSimulator",
         "uuid": "8fa8fbb4-e8de-4b85-8000-3c5e679009b4",
         "version": [0, 0, 0],
-        "min_engine_version": [1, 21, 40]
+        "min_engine_version": [1, 21, 130]
     },
     "modules": [
         {
@@ -20,7 +20,7 @@
             "language": "JavaScript",
             "uuid": "ee3a3f15-afa2-4f60-b5ba-868a27929372",
             "version": [0, 0, 0],
-            "entry": "scripts/dest/main.js"
+            "entry": "scripts/index.js"
         }
     ],
     "capabilities": [
@@ -29,15 +29,15 @@
     "dependencies": [
         {
             "module_name": "@minecraft/server",
-            "version": "2.3.0-beta"
+            "version": "beta"
         },
         {
             "module_name": "@minecraft/server-ui",
-            "version": "2.1.0-beta"
+            "version": "beta"
         },
         {
             "module_name": "@minecraft/debug-utilities",
-            "version": "1.0.0-beta"
+            "version": "beta"
         }
     ]
 }
