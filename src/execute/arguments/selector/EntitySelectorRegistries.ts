@@ -18,7 +18,8 @@ export const ENTITY_SELECTOR_REGISTRIES = new Registries({
                 processor(stack, entities) {
                     if (!stack.hasExecutor()) return [];
                     return entities.includes(stack.getExecutor()) ? [stack.getExecutor()] : [];
-                }
+                },
+                limit: 1
             }
         });
         registry.register(id("@p"), {

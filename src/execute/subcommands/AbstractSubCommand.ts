@@ -43,6 +43,6 @@ export abstract class GuardableSubCommand extends SubCommand {
     public abstract test(stack: CommandSourceStack): boolean;
 
     public override apply(stack: CommandSourceStack): CommandSourceStack[] {
-        return this.test(stack) ? [stack] : [];
+        return this.test(stack) ? [stack.clone()] : [];
     }
 }

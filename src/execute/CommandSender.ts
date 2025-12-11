@@ -20,6 +20,8 @@ export abstract class CommandSender<T extends Origin> {
 
     public abstract writeOut(stack: CommandSourceStack): void;
 
+    public abstract toString(): string;
+
     private static EntityCommandSender = class extends CommandSender<Entity> {
         public constructor(entity: Entity) {
             super(entity);
@@ -42,6 +44,10 @@ export abstract class CommandSender<T extends Origin> {
             stack.setRotation(this.getRotation());
             stack.setPosition(this.origin);
             stack.setExecutor(this.origin);
+        }
+
+        public override toString(): string {
+            return this.origin.nameTag.length === 0 ? this.origin.localizationKey : this.origin.nameTag;
         }
     }
 
@@ -68,6 +74,10 @@ export abstract class CommandSender<T extends Origin> {
             stack.setPosition(this.getPosition());
             stack.setExecutor(undefined);
         }
+
+        public override toString(): string {
+            return this.origin.localizationKey;
+        }
     }
 
     private static WorldCommandSender = class extends CommandSender<World> {
@@ -92,6 +102,10 @@ export abstract class CommandSender<T extends Origin> {
             stack.setRotation(this.getRotation());
             stack.setPosition(this.getPosition());
             stack.setExecutor(undefined);
+        }
+
+        public override toString(): string {
+            return "WORLD";
         }
     }
 

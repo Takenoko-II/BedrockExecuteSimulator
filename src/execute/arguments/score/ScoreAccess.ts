@@ -34,6 +34,10 @@ export class ScoreAccess {
             else if (this.scoreHolder.isSingle) {
                 const entities = this.scoreHolder.getEntities(stack);
 
+                console.log(stack.toString());
+                console.log(this.scoreHolder.toString());
+               console.log( this.scoreHolder.getEntities(stack).length)
+
                 if (entities.length === 0) {
                     return undefined;
                 }

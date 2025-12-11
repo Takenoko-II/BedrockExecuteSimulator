@@ -138,6 +138,6 @@ export class CommandSourceStack {
     }
 
     public toString() {
-        return `CommandSourceStack { sender=${this.sender.origin.toString()}, executor=${(this.executor?.nameTag ?? this.executor?.typeId) ?? "null"}, position=${this.position}, rotation=${this.rotation}, dimension=${this.dimension.id} }`
+        return `CommandSourceStack { sender=${this.sender.toString()}, executor=${this.executor === undefined ? "null" : (this.executor.nameTag.length === 0 ? this.executor.localizationKey : this.executor.nameTag)}, position=${this.position instanceof Entity ? this.position.nameTag.length === 0 ? this.position.localizationKey : this.position.nameTag : this.position.toString()}, rotation=${this.rotation}, dimension=${this.dimension.id} }`
     }
 }

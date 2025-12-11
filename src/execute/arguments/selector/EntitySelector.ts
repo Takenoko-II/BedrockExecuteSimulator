@@ -143,6 +143,10 @@ export class EntitySelector {
             }
         }
 
+        if (this.selectorType.traits.processor) {
+            entities = this.selectorType.traits.processor(stack, entities);
+        }
+
         if (this.selectorArguments.hasAnyOf("c")) {
             const c = this.selectorArguments.getAsDirectValue("c")!;
 
@@ -154,10 +158,6 @@ export class EntitySelector {
         }
         else if (this.selectorType.traits.limit !== undefined) {
             entities.splice(this.selectorType.traits.limit);
-        }
-
-        if (this.selectorType.traits.processor) {
-            entities = this.selectorType.traits.processor(stack, entities);
         }
 
         return entities;

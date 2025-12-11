@@ -207,20 +207,20 @@ export class Execute {
         }
     };
 
-    private execute(callbackFn: (stack: CommandSourceStack) => void, stack: CommandSourceStack, index: number): boolean {
+    private execute(callbackFn: (stack: CommandSourceStack) => void, stack: CommandSourceStack, index: number): void {
         if (index > this.subCommands.length - 1) {
-            return true;
+            callbackFn(stack);
+            return;
         }
 
         const subCommand: SubCommand = this.subCommands[index]!;
         const forks: CommandSourceStack[] = subCommand.apply(stack);
 
         for (const fork of forks) {
-            const isFinalSubCommand: boolean = this.execute(callbackFn, fork, index + 1);
-            if (isFinalSubCommand) callbackFn(fork);
+            this.execute(callbackFn, fork, index + 1);
         }
 
-        return false;
+        return;
     }
 
     public run(callbackFn: (stack: CommandSourceStack) => void): void;

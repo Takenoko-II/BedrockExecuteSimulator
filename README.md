@@ -142,6 +142,7 @@ bun run build
 ```
 
 scriptsフォルダが作成される...はず
+<br>tsgoはやくこい
 
 ### Minecraftへの導入
 - `development_behavior_packs` に入れるのがおすすめ
