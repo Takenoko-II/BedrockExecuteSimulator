@@ -1,4 +1,4 @@
-import { DebugLine, DebugArrow, DebugSphere, DebugShape } from "@minecraft/debug-utilities";
+import { DebugLine, DebugArrow, DebugSphere, DebugShape, debugDrawer } from "@minecraft/debug-utilities";
 import { ExecuteForkIterator, Fork } from "./ExecuteForkIterator";
 import { CommandSourceStack } from "./CommandSourceStack";
 
@@ -9,30 +9,36 @@ import { CommandSourceStack } from "./CommandSourceStack";
  * フォークする場合は分岐の終点に辿り着いたCSSのみ残しておく
  */
 
-class StackDisplay {
+export class StackDisplay {
     private readonly shapes: Set<DebugShape> = new Set();
 
-    private constructor(private readonly stack: CommandSourceStack) {}
+    public constructor(private readonly stack: CommandSourceStack) {}
 
     public add() {
         if (this.shapes.size > 0) {
             return;
         }
 
-        const pos = this.stack.getPosition();
+        const loc = this.stack.getLocation();
 
-        const sphere = new DebugSphere(pos);
+        const sphere = new DebugSphere(loc);
+        sphere.scale = 0.25;
         this.shapes.add(sphere);
 
-        const arrow = new DebugArrow(pos, this.stack.getRotation().getDirection3d().add(pos));
+        const arrow = new DebugArrow(loc, this.stack.getRotation().getDirection3d().add(loc));
+        sphere.scale = 0.25;
         this.shapes.add(arrow);
 
         const exec = this.stack.getUndefinedableExecutor();
         if (exec) {
-            const line = new DebugLine(pos, exec.location);
+            const line = new DebugLine(loc, exec.location);
             line.color = { red: 1, green: 0, blue: 0 };
             this.shapes.add(line);
         }
+
+        this.shapes.forEach(shape => {
+            debugDrawer.addShape(shape);
+        });
     }
 
     public remove() {

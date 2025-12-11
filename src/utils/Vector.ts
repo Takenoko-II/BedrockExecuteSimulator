@@ -1,4 +1,4 @@
-import { Direction, Vector2, Vector3, VectorXZ } from "@minecraft/server";
+import { Dimension, DimensionLocation, Direction, Vector2, Vector3, VectorXZ } from "@minecraft/server";
 import { sentry } from "../libs/TypeSentry";
 
 export interface ReadonlyVector3 extends Vector3 {
@@ -373,6 +373,15 @@ export class Vector3Builder implements Vector3, IVectorBuilder<Vector3Builder> {
 
     public toXZ(): VectorXZ {
         return { x: this.x, z: this.z };
+    }
+
+    public toDimensionLocation(dimension: Dimension): DimensionLocation {
+        return {
+            x: this.__x__,
+            y: this.__y__,
+            z: this.__z__,
+            dimension
+        };
     }
 
     public static isVector3(value: unknown): value is Vector3 {

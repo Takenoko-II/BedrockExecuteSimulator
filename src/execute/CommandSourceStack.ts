@@ -1,4 +1,4 @@
-import { CommandResult, Dimension, Entity, Vector2, Vector3, world } from "@minecraft/server";
+import { CommandResult, Dimension, DimensionLocation, Entity, Vector2, Vector3, world } from "@minecraft/server";
 import { DualAxisRotationBuilder, Vector3Builder } from "@utils/Vector";
 import { CommandSender, Origin } from "./CommandSender";
 import { MinecraftDimensionTypes } from "@minecraft/vanilla-data";
@@ -55,6 +55,10 @@ export class CommandSourceStack {
 
     public getDimension(): Dimension {
         return this.dimension;
+    }
+
+    public getLocation(): DimensionLocation {
+        return this.getPosition().toDimensionLocation(this.getDimension());
     }
 
     public clone(): CommandSourceStack;
