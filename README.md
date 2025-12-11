@@ -104,7 +104,7 @@ world.afterEvents.itemUse.subscribe(event => {
 - 選択される複数のエンティティの位置が一致していた場合のID順ソート
 - 実行文脈の遷移の視覚化機能
 - エンティティセレクタ `@initiator` (作るか悩み中)
-- `ExecuteForkIterator` がまあクソコード
+- `ExecuteForkIterator` がまあクソコード -> TODO リファクタリング中 一通り直したらコマンドのサーバーにでも投げようかな
 
 ## 既知のバグ
 同一座標に重なったエンティティにプレイヤーが含まれる場合のソート順が正しくない(`getEntities()` の戻り値はつねにプレイヤーが最後に来てしまう？)
