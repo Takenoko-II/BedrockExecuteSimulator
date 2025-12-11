@@ -3,7 +3,7 @@
 名前のとおり
 <br>開発中
 
-## executeコマンドの仕様解説集
+## executeメモ書き
 - ### [エンティティアンカーの仕組み](/mds/EntityAnchor.md)
 - ### [サブコマンドの分類](/mds/SubCommand.md)
 
@@ -99,11 +99,12 @@ world.afterEvents.itemUse.subscribe(event => {
 });
 ```
 
-## 未実装の機能
-- セレクタ引数`hasitem`によるフィルタ
+## 未実装の機能／TODO
+- セレクタ引数 `hasitem` によるフィルタ
 - 選択される複数のエンティティの位置が一致していた場合のID順ソート
 - 実行文脈の遷移の視覚化機能
 - エンティティセレクタ `@initiator` (作るか悩み中)
+- `ExecuteForkIterator` がまあクソコード
 
 ## 既知のバグ
 同一座標に重なったエンティティにプレイヤーが含まれる場合のソート順が正しくない(`getEntities()` の戻り値はつねにプレイヤーが最後に来てしまう？)
@@ -114,3 +115,35 @@ world.afterEvents.itemUse.subscribe(event => {
 - セレクタ引数 `m=` は反転であっても重複できない
 - Map(オブジェクト) を値にとるセレクタ引数はすべて重複を許可し、意味の重複するものは最後の入力を使う
 - セレクタ引数 `type=` だけ特別扱い
+
+## dev
+
+### 準備
+
+Bun をインストールしたらリポジトリcloneして
+
+```powershell
+bun init
+bun i @minecraft/vanilla-data
+
+# 必要に応じて
+# bun i @minecraft/server
+# bun i @minecraft/server-ui
+# bun i @minecraft/server-gametest
+# bun i @minecraft/debug-utilities
+```
+
+### 型チェック／トランスパイル／バンドル
+
+ターミナルで以下を実行
+```powershell
+# 全部やる
+bun run build
+```
+
+scriptsフォルダが作成される...はず
+
+### Minecraftへの導入
+- `development_behavior_packs` に入れるのがおすすめ
+- `DebugDrawer` 使うからベータAPI必須！！！！！！！
+- [`index.ts`](src/index.ts)がエントリポイントになってる
