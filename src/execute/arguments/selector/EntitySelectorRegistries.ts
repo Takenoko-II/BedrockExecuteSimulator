@@ -1,6 +1,6 @@
 import { MinecraftEntityTypes } from "@minecraft/vanilla-data";
 import { sentry } from "@typesentry";
-import { Identifier, Registries } from "@/utils/NeoRegistry";
+import { Identifier, Registries, registryRegistrar } from "@/utils/NeoRegistry";
 import { VectorComponentModel } from "../vector/AbstractVectorResolver";
 import { SelectorArgumentDuplicationRule, SelectorArgumentTypeModel, SelectorArgumentTypes } from "./SelectorArgumentType";
 import { SelectorSortOrder, SelectorTypeModel } from "./SelectorType";
@@ -10,7 +10,7 @@ export function id(value: string): Identifier {
 }
 
 export const ENTITY_SELECTOR_REGISTRIES = new Registries({
-    "bedrock_execute_simulator:entity_selector_types": Registries.newRegistry(SelectorTypeModel, registry => {
+    "bedrock_execute_simulator:entity_selector_types": registryRegistrar(SelectorTypeModel, registry => {
         registry.register(id("@s"), {
             aliveOnly: false,
             sortOrder: SelectorSortOrder.NEAREST,
@@ -67,7 +67,7 @@ export const ENTITY_SELECTOR_REGISTRIES = new Registries({
             }
         });
     }),
-    "bedrock_execute_simulator:entity_selector_argument_types": Registries.newRegistry(SelectorArgumentTypeModel, registry => {
+    "bedrock_execute_simulator:entity_selector_argument_types": registryRegistrar(SelectorArgumentTypeModel, registry => {
         registry.register(id("c"), {
             invertible: false,
             duplicatable: SelectorArgumentDuplicationRule.NEVER,

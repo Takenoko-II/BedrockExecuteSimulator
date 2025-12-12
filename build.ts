@@ -23,4 +23,4 @@ const output = await bun.build({
     ]
 });
 
-console.log("build finished: " + (output.success ? "successful" : "failure"));
+console.log("build finished: " + (output.success ? "success" : "failure"));

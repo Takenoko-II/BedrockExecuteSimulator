@@ -17,6 +17,7 @@ import { In } from "./subcommands/In";
 import { Anchored, EntityAnchorType } from "./subcommands/Anchored";
 import { UnlessBlock, UnlessBlocks, UnlessEntity, UnlessScoreCompare, UnlessScoreMatches } from "./subcommands/Unless";
 import { ExecuteForkIterator, ForkIteratorBuildOptions } from "./ExecuteForkIterator";
+import { sentry } from "@/libs/TypeSentry";
 
 interface IPositioned {
     readonly $: (position: string) => Execute;
@@ -219,8 +220,6 @@ export class Execute {
         for (const fork of forks) {
             this.execute(callbackFn, fork, index + 1);
         }
-
-        return;
     }
 
     public run(callbackFn: (stack: CommandSourceStack) => void): void;
@@ -228,7 +227,7 @@ export class Execute {
     public run(command: string): void;
 
     public run(value: ((stack: CommandSourceStack) => void) | string): void {
-        if (typeof value === "string") {
+        if (sentry.string.test(value)) {
             this.execute(stack => stack.runCommand(value), this.root, 0);
         }
         else {

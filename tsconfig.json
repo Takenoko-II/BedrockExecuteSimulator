@@ -21,6 +21,8 @@
         "noFallthroughCasesInSwitch": false,
         "noPropertyAccessFromIndexSignature": false, // これやるとRecordがReflect.get()でしか使えなくなる件
 
+        "experimentalDecorators": true,
+
         "baseUrl": ".",
         "paths": {
             "@/*": [

@@ -120,7 +120,7 @@ world.afterEvents.itemUse.subscribe(event => {
 
 ### 準備
 
-Bun をインストールしたらリポジトリcloneして
+(Bun前提) リポジトリcloneして
 
 ```powershell
 bun init

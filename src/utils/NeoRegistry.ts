@@ -220,14 +220,10 @@ class MutableRegistry<V> extends Registry<V> {
     }
 }
 
-export class RegistryRegistrar<V> {
-    private static readonly CONSTRUCTION_PREVENTION_SYMBOL = Symbol(RegistryRegistrar.name);
+export interface RegistryRegistrar<V> {
+    readonly type: TypeModel<V>;
 
-    private readonly _: typeof RegistryRegistrar.CONSTRUCTION_PREVENTION_SYMBOL = RegistryRegistrar.CONSTRUCTION_PREVENTION_SYMBOL;
-
-    public constructor(public readonly type: TypeModel<V>, public readonly register?: (registry: MutableRegistry<V>) => void) {
-        this._
-    }
+    register?(registry: MutableRegistry<V>): void;
 }
 
 type RegistriesInitializer = {
@@ -252,7 +248,11 @@ export class Registries<I extends RegistriesInitializer, R extends InitializerTo
         const r: Record<string, Registry<unknown>> = {};
 
         for (const [identifier, registrar] of Object.entries(initializer)) {
-            const registry = new MutableRegistry(Identifier.of(identifier), registrar.type);
+            const registry = new MutableRegistry(
+                Identifier.of(identifier),
+                registrar.type
+            );
+
             if (registrar.register) registrar.register(registry);
             r[identifier] = registry;
         }
@@ -283,12 +283,10 @@ export class Registries<I extends RegistriesInitializer, R extends InitializerTo
     public withRegistry<const K extends string, const Q extends RegistryRegistrar<any>>(identifier: K, registrar: Q): Registries<I & Record<K, Q>> {
         return new Registries({ ...this.initializer, [identifier]: registrar });
     }
+}
 
-    public static newRegistries(): Registries<{}> {
-        return new Registries({});
-    }
-
-    public static newRegistry<V>(type: TypeModel<V>, registrar?: (registry: MutableRegistry<V>) => void): RegistryRegistrar<V> {
-        return new RegistryRegistrar(type, registrar);
-    }
+export function registryRegistrar<V>(type: TypeModel<V>, register?: (registry: MutableRegistry<V>) => void): RegistryRegistrar<V> {
+    return register === undefined
+        ? { type }
+        : { type, register };
 }
