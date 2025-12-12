@@ -13,8 +13,8 @@ export interface Fork {
     readonly final: boolean;
 }
 
-export class ExecuteForkIterator implements Iterator<Fork, Fork, void> {
-    private readonly generator: Generator<Fork, Fork, void>
+export class ForkIterator implements Iterator<Fork, Fork, void> {
+    private readonly generator: Generator<Fork, Fork, void>;
 
     public constructor(public readonly root: CommandSourceStack, public readonly subCommands: SubCommand[], private readonly options: ForkIteratorBuildOptions) {
         this.generator = this.fork(root);
@@ -41,6 +41,7 @@ export class ExecuteForkIterator implements Iterator<Fork, Fork, void> {
         const forks: CommandSourceStack[] = subCommand.apply(stack);
 
         for (const fork of forks) {
+            // yield* って最後の return までは yield してくれないんだって。。。。考えてみれば当たり前な気がしなくもなくもなくも
             yield yield* this.fork(fork, index + 1);
         }
 
@@ -51,7 +52,7 @@ export class ExecuteForkIterator implements Iterator<Fork, Fork, void> {
         };
     }
 
-    public [Symbol.iterator](): ExecuteForkIterator {
+    public [Symbol.iterator](): ForkIterator {
         return this;
     }
 }

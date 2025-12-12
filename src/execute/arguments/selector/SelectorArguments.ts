@@ -10,7 +10,7 @@ export type SelectorArgumentInputMap = Record<string, InvertibleValue[]>;
 export class SelectorArguments {
     public constructor(private readonly argumentInputMap: SelectorArgumentInputMap) {}
 
-    public getAsInvertibleList<K extends keyof EntitySelectorArgumentTypeMap>(key: K): ({ readonly isInverted: boolean; readonly value: EntitySelectorArgumentTypeMap[K] })[] | undefined {
+    public getInvertibleList<K extends keyof EntitySelectorArgumentTypeMap>(key: K): ({ readonly isInverted: boolean; readonly value: EntitySelectorArgumentTypeMap[K] })[] | undefined {
         if (!(key in this.argumentInputMap)) {
             return undefined;
         }
@@ -23,12 +23,12 @@ export class SelectorArguments {
         return input;
     }
 
-    public getAsInvertibleValue<K extends keyof EntitySelectorArgumentTypeMap>(key: K): { readonly isInverted: boolean; readonly value: EntitySelectorArgumentTypeMap[K] } | undefined {
-        return this.getAsInvertibleList(key)?.[0];
+    public getInvertible<K extends keyof EntitySelectorArgumentTypeMap>(key: K): { readonly isInverted: boolean; readonly value: EntitySelectorArgumentTypeMap[K] } | undefined {
+        return this.getInvertibleList(key)?.[0];
     }
 
-    public getAsDirectValue<K extends keyof EntitySelectorArgumentTypeMap>(key: K): EntitySelectorArgumentTypeMap[K] | undefined {
-        return this.getAsInvertibleValue(key)?.value;
+    public getValueDirectly<K extends keyof EntitySelectorArgumentTypeMap>(key: K): EntitySelectorArgumentTypeMap[K] | undefined {
+        return this.getInvertible(key)?.value;
     }
 
     public hasAnyOf<K extends keyof EntitySelectorArgumentTypeMap>(...keys: K[]): boolean {
@@ -40,14 +40,14 @@ export class SelectorArguments {
 
         if (this.hasAnyOf("dx", "dy", "dz")) {
             entityQueryOptions.volume = {
-                x: this.getAsDirectValue("dx") ?? 0,
-                y: this.getAsDirectValue("dy") ?? 0,
-                z: this.getAsDirectValue("dz") ?? 0
+                x: this.getValueDirectly("dx") ?? 0,
+                y: this.getValueDirectly("dy") ?? 0,
+                z: this.getValueDirectly("dz") ?? 0
             };
         }
 
         if (this.hasAnyOf("family")) {
-            const families = this.getAsInvertibleList("family")!!;
+            const families = this.getInvertibleList("family")!!;
             const include: string[] = [];
             const exclude: string[] = [];
 
@@ -66,7 +66,7 @@ export class SelectorArguments {
 
         if (this.hasAnyOf("has_property")) {
             const propertyOptionsList: EntityQueryPropertyOptions[] = [];
-            const properties = this.getAsDirectValue("has_property")!;
+            const properties = this.getValueDirectly("has_property")!;
 
             // if (Object.keys(properties).length === 0)... 空Map判定は型チェックにおまかせ！
 
@@ -104,15 +104,15 @@ export class SelectorArguments {
         // entityQueryOptionsにhasitemがない！！！！！！！！！！！！！！！！！！！！！！！
 
         if (this.hasAnyOf("l")) {
-            entityQueryOptions.maxLevel = this.getAsDirectValue("l")!!;
+            entityQueryOptions.maxLevel = this.getValueDirectly("l")!!;
         }
 
         if (this.hasAnyOf("lm")) {
-            entityQueryOptions.minLevel = this.getAsDirectValue("lm")!!;
+            entityQueryOptions.minLevel = this.getValueDirectly("lm")!!;
         }
 
         if (this.hasAnyOf("m")) {
-            const m = this.getAsInvertibleValue("m")!!;
+            const m = this.getInvertible("m")!!;
 
             let gameMode: GameMode;
             if (sentry.enumLikeOf(GameMode).test(m.value)) {
@@ -153,7 +153,7 @@ export class SelectorArguments {
         if (this.hasAnyOf("name")) {
             const exclude: string[] = [];
 
-            for (const name of this.getAsInvertibleList("name")!!) {
+            for (const name of this.getInvertibleList("name")!!) {
                 if (name.isInverted) {
                     exclude.push(name.value);
                 }
@@ -167,32 +167,32 @@ export class SelectorArguments {
         }
 
         if (this.hasAnyOf("r")) {
-            entityQueryOptions.maxDistance = this.getAsDirectValue("r")!!;
+            entityQueryOptions.maxDistance = this.getValueDirectly("r")!!;
         }
 
         if (this.hasAnyOf("rm")) {
-            entityQueryOptions.minDistance = this.getAsDirectValue("rm")!!;
+            entityQueryOptions.minDistance = this.getValueDirectly("rm")!!;
         }
 
         if (this.hasAnyOf("rx")) {
-            entityQueryOptions.maxVerticalRotation = this.getAsDirectValue("rx")!!;
+            entityQueryOptions.maxVerticalRotation = this.getValueDirectly("rx")!!;
         }
 
         if (this.hasAnyOf("rxm")) {
-            entityQueryOptions.minVerticalRotation = this.getAsDirectValue("rxm")!!;
+            entityQueryOptions.minVerticalRotation = this.getValueDirectly("rxm")!!;
         }
 
         if (this.hasAnyOf("ry")) {
-            entityQueryOptions.maxHorizontalRotation = this.getAsDirectValue("ry")!!;
+            entityQueryOptions.maxHorizontalRotation = this.getValueDirectly("ry")!!;
         }
 
         if (this.hasAnyOf("rym")) {
-            entityQueryOptions.minHorizontalRotation = this.getAsDirectValue("rym")!!;
+            entityQueryOptions.minHorizontalRotation = this.getValueDirectly("rym")!!;
         }
 
         if (this.hasAnyOf("scores")) {
             const scoreOptionsList: EntityQueryScoreOptions[] = [];
-            const scores = this.getAsDirectValue("scores")!!;
+            const scores = this.getValueDirectly("scores")!!;
 
             // if (Object.keys(scores).length === 0) 空Mapチェックは型チェックにおまかせ！
 
@@ -230,7 +230,7 @@ export class SelectorArguments {
             const include: string[] = [];
             const exclude: string[] = [];
 
-            for (const tag of this.getAsInvertibleList("tag")!!) {
+            for (const tag of this.getInvertibleList("tag")!!) {
                 if (tag.isInverted) {
                     exclude.push(tag.value);
                 }
@@ -246,7 +246,7 @@ export class SelectorArguments {
         if (this.hasAnyOf("type")) {
             const exclude: string[] = [];
 
-            for (const type of this.getAsInvertibleList("type")!!) {
+            for (const type of this.getInvertibleList("type")!!) {
                 if (type.isInverted) {
                     exclude.push(type.value);
                 }
@@ -279,17 +279,17 @@ export class SelectorArguments {
         };
 
         if (this.hasAnyOf("x")) {
-            const _x = this.getAsDirectValue("x")!
+            const _x = this.getValueDirectly("x")!
             x = sentry.number.test(_x) ? { type: VectorComponentType.ABSOLUTE, value: _x } : _x;
         }
 
         if (this.hasAnyOf("y")) {
-            const _y = this.getAsDirectValue("y")!
+            const _y = this.getValueDirectly("y")!
             y = sentry.number.test(_y) ? { type: VectorComponentType.ABSOLUTE, value: _y } : _y;
         }
 
         if (this.hasAnyOf("z")) {
-            const _z = this.getAsDirectValue("z")!
+            const _z = this.getValueDirectly("z")!
             z = sentry.number.test(_z) ? { type: VectorComponentType.ABSOLUTE, value: _z } : _z;
         }
 

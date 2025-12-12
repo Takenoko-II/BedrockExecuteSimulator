@@ -6,7 +6,7 @@
         "target": "es2024",
         "moduleResolution": "bundler",
         "esModuleInterop": true,
-        "declaration": true,
+        // "declaration": true,
         "skipLibCheck": true,
 
         "strict": true,
@@ -16,10 +16,10 @@
         "allowUnreachableCode": false,
         "noImplicitReturns": true,
         "noUnusedParameters": true,
-        // "noUnusedLocals": true,
         "noUncheckedIndexedAccess": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "noUnusedLocals": false,
         "noFallthroughCasesInSwitch": false,
-        "noPropertyAccessFromIndexSignature": false, // これやるとRecordがReflect.get()でしか使えなくなる件
 
         "experimentalDecorators": true,
 
@@ -41,5 +41,5 @@
     },
     "include": [
         "src"
-    ]
+, "test.js"    ]
 }

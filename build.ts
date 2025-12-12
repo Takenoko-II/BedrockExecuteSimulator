@@ -1,4 +1,4 @@
-import bun from "bun"
+import bun from "bun";
 
 console.log("build start");
 

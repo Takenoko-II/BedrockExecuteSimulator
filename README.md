@@ -3,7 +3,7 @@
 名前のとおり
 <br>開発中
 
-## executeメモ書き
+## メモ書き
 - ### [エンティティアンカーの仕組み](/mds/EntityAnchor.md)
 - ### [サブコマンドの分類](/mds/SubCommand.md)
 
@@ -41,24 +41,24 @@ execute.as("@e[type=armor_stand,scores={a=0}]").at("@e[type=armor_stand,scores={
 ```ts
 import { world } from "@minecraft/server";
 import { Execute } from "./execute/Execute";
-import { Fork } from "./execute/ExecuteForkIterator";
+import { Fork } from "./execute/ForkIterator";
 
 const execute: Execute = new Execute();
 
 execute.as("@e[type=armor_stand,scores={a=0}]").at("@e[type=armor_stand,scores={a=0}]");
 
 // イテレータを取得
-const iter = execute.buildIterator();
+const iter = execute.buildIterator({
+    run(stack) {
+        world.scoreboard.getObjective("a")!.addScore(stack.getExecutor(), 1);
+    }
+});
 
 let result: IteratorResult<Fork, Fork>;
 do {
     // 実行文脈のフォークまたはリダイレクト一回単位で取得できる
     result = iter.next();
-
-    // final=trueの場合、その分岐の最後のサブコマンド(run)ということ
-    if (result.value.final && result.value.stack) {
-        world.scoreboard.getObjective("a")!.addScore(result.value.stack.getExecutor(), 1);
-    }
+    world.sendMessage(result.value.stack.toString(), result.value.subCommand, result.value.final);
 }
 while (!result.done);
 ```

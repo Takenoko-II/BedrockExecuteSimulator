@@ -19,7 +19,7 @@ export class Identifier {
 
 class IdentifierParseError extends Error {}
 
-class IdentifierParser extends AbstractParser<Identifier, IdentifierParseError> {
+export class IdentifierParser extends AbstractParser<Identifier, IdentifierParseError> {
     private constructor(text: string, private readonly defaultNamespace?: string) {
         super(text);
     }
