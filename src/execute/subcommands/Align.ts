@@ -20,7 +20,7 @@ export class Align extends RedirectableSubCommand {
         return this.axisSet;
     }
 
-    public toString(): string {
+    public getName(): string {
         return "align";
     }
 }

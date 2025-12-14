@@ -22,7 +22,7 @@ export class Facing extends RedirectableSubCommand {
         return this.posVecResolver;
     }
 
-    public toString(): string {
+    public getName(): string {
         return "facing";
     }
 }
@@ -45,7 +45,7 @@ export class FacingEntity extends ForkableSubCommand {
         return this.entityAnchor;
     }
 
-    public toString(): string {
+    public getName(): string {
         return "facing entity";
     }
 }

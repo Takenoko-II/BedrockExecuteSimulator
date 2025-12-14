@@ -18,7 +18,7 @@ export class In extends RedirectableSubCommand {
         return this.dimension;
     }
 
-    public toString(): string {
+    public getName(): string {
         return "in";
     }
 }

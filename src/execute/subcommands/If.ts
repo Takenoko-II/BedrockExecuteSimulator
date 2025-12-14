@@ -27,7 +27,7 @@ export class IfEntity extends GuardableSubCommand {
         return this.entitySelector;
     }
 
-    public toString(): string {
+    public getName(): string {
         return "if entity";
     }
 }
@@ -62,7 +62,7 @@ export class IfBlock extends GuardableSubCommand {
         return this.blockPredicate;
     }
 
-    public toString(): string {
+    public getName(): string {
         return "if block";
     }
 }
@@ -147,7 +147,7 @@ export class IfBlocks extends GuardableSubCommand {
         return this.scanMode;
     }
 
-    public toString(): string {
+    public getName(): string {
         return "if blocks";
     }
 }
@@ -182,7 +182,7 @@ export class IfScoreCompare extends GuardableSubCommand {
         return this.comparator;
     }
 
-    public toString(): string {
+    public getName(): string {
         return "if score";
     }
 }
@@ -210,7 +210,7 @@ export class IfScoreMatches extends GuardableSubCommand {
         return this.range;
     }
 
-    public toString(): string {
+    public getName(): string {
         return "if score matches";
     }
 }

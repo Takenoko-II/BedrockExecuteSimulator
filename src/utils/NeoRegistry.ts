@@ -32,7 +32,7 @@ export class IdentifierParser extends AbstractParser<Identifier, IdentifierParse
         return new Set(['\'', '"']);
     }
 
-    protected override getWhitespace(): Set<string> {
+    protected override getWhitespaces(): Set<string> {
         return new Set([' ']);
     }
 

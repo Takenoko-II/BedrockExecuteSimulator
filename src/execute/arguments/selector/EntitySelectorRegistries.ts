@@ -4,10 +4,20 @@ import { Identifier, Registries, registryRegistrar } from "@/utils/NeoRegistry";
 import { VectorComponentModel } from "../vector/AbstractVectorResolver";
 import { SelectorArgumentDuplicationRule, SelectorArgumentTypeModel, SelectorArgumentTypes } from "./SelectorArgumentType";
 import { SelectorSortOrder, SelectorTypeModel } from "./SelectorType";
+import { ItemLocationModel } from "./ItemLocation";
+import { Entity, EntityComponentReturnType, EntityComponentTypes, EquipmentSlot, ItemStack, Player } from "@minecraft/server";
+import { IntRange } from "@/utils/NumberRange";
 
 export function id(value: string): Identifier {
     return new Identifier("bedrock_execute_simulator", value);
 }
+
+function tryAccessComponent<T extends EntityComponentTypes>(entity: Entity, type: T): EntityComponentReturnType<T> | undefined {
+    if (!entity.isValid || !entity.hasComponent(type)) return;
+    return entity.getComponent(type)!;
+}
+
+class NotImplementedError extends Error {}
 
 export const ENTITY_SELECTOR_REGISTRIES = new Registries({
     "bedrock_execute_simulator:entity_selector_types": registryRegistrar(SelectorTypeModel, registry => {
@@ -191,5 +201,167 @@ export const ENTITY_SELECTOR_REGISTRIES = new Registries({
             duplicatable: SelectorArgumentDuplicationRule.NEVER,
             type: sentry.unionOf(VectorComponentModel, sentry.number)
         });
+    }),
+    "bedrock_execute_simulator:item_location_types": registryRegistrar(ItemLocationModel, registry => {
+        registry.register(id("slot.weapon.mainhand"), {
+            slotRange: IntRange.exactValue(0),
+            getItem(entity) {
+                return tryAccessComponent(entity, EntityComponentTypes.Equippable)?.getEquipment(EquipmentSlot.Mainhand);
+            },
+            getItems(entity) {
+                const item = this.getItem(entity, 0);
+                return item === undefined ? [] : [item];
+            }
+        });
+        registry.register(id("slot.weapon.offhand"), {
+            slotRange: IntRange.exactValue(0),
+            getItem(entity) {
+                return tryAccessComponent(entity, EntityComponentTypes.Equippable)?.getEquipment(EquipmentSlot.Offhand);
+            },
+            getItems(entity) {
+                const item = this.getItem(entity, 0);
+                return item === undefined ? [] : [item];
+            }
+        });
+        registry.register(id("slot.armor.head"), {
+            slotRange: IntRange.exactValue(0),
+            getItem(entity) {
+                return tryAccessComponent(entity, EntityComponentTypes.Equippable)?.getEquipment(EquipmentSlot.Head);
+            },
+            getItems(entity) {
+                const item = this.getItem(entity, 0);
+                return item === undefined ? [] : [item];
+            }
+        });
+        registry.register(id("slot.armor.chest"), {
+            slotRange: IntRange.exactValue(0),
+            getItem(entity) {
+                return tryAccessComponent(entity, EntityComponentTypes.Equippable)?.getEquipment(EquipmentSlot.Chest);
+            },
+            getItems(entity) {
+                const item = this.getItem(entity, 0);
+                return item === undefined ? [] : [item];
+            }
+        });
+        registry.register(id("slot.armor.legs"), {
+            slotRange: IntRange.exactValue(0),
+            getItem(entity) {
+                return tryAccessComponent(entity, EntityComponentTypes.Equippable)?.getEquipment(EquipmentSlot.Legs);
+            },
+            getItems(entity) {
+                const item = this.getItem(entity, 0);
+                return item === undefined ? [] : [item];
+            }
+        });
+        registry.register(id("slot.armor.feet"), {
+            slotRange: IntRange.exactValue(0),
+            getItem(entity) {
+                return tryAccessComponent(entity, EntityComponentTypes.Equippable)?.getEquipment(EquipmentSlot.Feet);
+            },
+            getItems(entity) {
+                const item = this.getItem(entity, 0);
+                return item === undefined ? [] : [item];
+            }
+        });
+        registry.register(id("slot.armor"), {
+            slotRange: IntRange.exactValue(0),
+            getItem(entity) {
+                return tryAccessComponent(entity, EntityComponentTypes.Equippable)?.getEquipment(EquipmentSlot.Body);
+            },
+            getItems(entity) {
+                const item = this.getItem(entity, 0);
+                return item === undefined ? [] : [item];
+            }
+        });
+        registry.register(id("slot.saddle"), {
+            slotRange: IntRange.exactValue(0),
+            getItem(entity) {
+                // inventory 0 = saddle slot
+                if (!tryAccessComponent(entity, EntityComponentTypes.IsSaddled)) return;
+                return tryAccessComponent(entity, EntityComponentTypes.Inventory)?.container.getItem(0);
+            },
+            getItems(entity) {
+                const item = this.getItem(entity, 0);
+                return item === undefined ? [] : [item];
+            }
+        });
+        registry.register(id("slot.chest"), {
+            slotRange: IntRange.minOnly(0),
+            getItem(entity, index) {
+                // inventory 1 ~ 16 = chest slot
+                if (!tryAccessComponent(entity, EntityComponentTypes.IsChested)) return;
+                return tryAccessComponent(entity, EntityComponentTypes.Inventory)?.container.getItem(index + 1);
+            },
+            getItems(entity) {
+                if (!tryAccessComponent(entity, EntityComponentTypes.IsChested)) return [];
+                const container = tryAccessComponent(entity, EntityComponentTypes.Inventory)?.container;
+                if (container === undefined) return [];
+
+                const items: ItemStack[] = [];
+                for (let i = 1; i < container.size; i++) {
+                    const item = container.getItem(i);
+                    if (item === undefined) continue;
+                    items.push(item);
+                }
+                return items;
+            }
+        });
+        registry.register(id("slot.inventory"), {
+            slotRange: IntRange.minOnly(0),
+            getItem(entity, index) {
+                return tryAccessComponent(entity, EntityComponentTypes.Inventory)?.container.getItem(index);
+            },
+            getItems(entity) {
+                const container = tryAccessComponent(entity, EntityComponentTypes.Inventory)?.container;
+                if (container === undefined) return [];
+
+                const items: ItemStack[] = [];
+                for (let i = 0; i < container.size; i++) {
+                    const item = container.getItem(i);
+                    if (item === undefined) continue;
+                    items.push(item);
+                }
+                return items;
+            }
+        });
+        registry.register(id("slot.hotbar"), {
+            slotRange: IntRange.minMax(0, 8),
+            getItem(entity, index) {
+                if (!(entity instanceof Player)) return;
+                return tryAccessComponent(entity, EntityComponentTypes.Inventory)?.container.getItem(index);
+            },
+            getItems(entity) {
+                const container = tryAccessComponent(entity, EntityComponentTypes.Inventory)?.container;
+                if (container === undefined) return [];
+
+                const items: ItemStack[] = [];
+                for (let i = 0; i <= 8; i++) {
+                    const item = container.getItem(i);
+                    if (item === undefined) continue;
+                    items.push(item);
+                }
+                return items;
+            }
+        });
+        registry.register(id("slot.equippable"), {
+            slotRange: IntRange.minOnly(0),
+            getItem() {
+                throw new NotImplementedError("slot.equippable って何?????????????");
+            },
+            getItems() {
+                throw new NotImplementedError("slot.equippable って何?????????????");
+            }
+        });
+        registry.register(id("slot.enderchest"), {
+            slotRange: IntRange.minMax(0, 26),
+            getItem(entity) {
+                if (!(entity instanceof Player)) return undefined;
+                throw new NotImplementedError("slot.enderchest は ScriptAPI からじゃコマンド使わないと取得できないんだ、ごめんよ");
+            },
+            getItems(entity) {
+                if (!(entity instanceof Player)) return [];
+                throw new NotImplementedError("slot.enderchest は ScriptAPI からじゃコマンド使わないと取得できないんだ、ごめんよ");
+            }
+        })
     })
 });

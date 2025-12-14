@@ -100,11 +100,11 @@ world.afterEvents.itemUse.subscribe(event => {
 ```
 
 ## 未実装の機能／TODO
-- セレクタ引数 `hasitem` によるフィルタ
-- 選択される複数のエンティティの位置が一致していた場合のID順ソート
-- 実行文脈の遷移の視覚化機能
+- 選択される複数のエンティティの位置が一致していた場合のID順ソート (不可能？)
+- 実行文脈の遷移の視覚化機能 (最高にだるい)
 - エンティティセレクタ `@initiator` (作るか悩み中)
-- `ExecuteForkIterator` がまあクソコード -> TODO リファクタリング中 一通り直したらコマンドのサーバーにでも投げようかな
+- executeコマンドパーサ (こんどやる)
+- セレクタ引数 `hasitem` の動作確認
 
 ## 既知のバグ
 同一座標に重なったエンティティにプレイヤーが含まれる場合のソート順が正しくない(`getEntities()` の戻り値はつねにプレイヤーが最後に来てしまう？)
@@ -123,7 +123,7 @@ world.afterEvents.itemUse.subscribe(event => {
 (Bun前提) リポジトリcloneして
 
 ```powershell
-bun init
+bun init -y
 bun i @minecraft/vanilla-data
 
 # 必要に応じて

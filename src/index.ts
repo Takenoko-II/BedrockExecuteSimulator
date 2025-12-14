@@ -19,4 +19,6 @@ world.afterEvents.itemUse.subscribe(({ itemStack: { type: { id } } }) => {
         r = iter.next();
     }
     while(!r.done);
+
+    new Execute().as("@e[hasitem={item=apple,location=slot.inventory,slot=1,quantity=1..5}]").run("say apple 1 ~ 5")
 });

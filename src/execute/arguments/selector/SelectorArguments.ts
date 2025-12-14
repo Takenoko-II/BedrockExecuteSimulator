@@ -1,9 +1,11 @@
-import { EntityQueryOptions, EntityQueryPropertyOptions, EntityQueryScoreOptions, GameMode } from "@minecraft/server";
+import { Entity, EntityComponentTypes, EntityQueryOptions, EntityQueryPropertyOptions, EntityQueryScoreOptions, GameMode, ItemStack, Player } from "@minecraft/server";
 import { sentry } from "@typesentry";
-import { EntitySelectorArgumentTypeMap, InvertibleValue } from "./SelectorArgumentType";
+import { EntitySelectorArgumentTypeMap, HasItem, HasPermission, InvertibleValue, SelectorArgumentTypes } from "./SelectorArgumentType";
 import { IntRange } from "@utils/NumberRange";
 import { VectorComponent, VectorComponentType } from "../vector/AbstractVectorResolver";
 import { PositionVectorResolver } from "../vector/PositionVectorResolver";
+import { Identifier, IdentifierParser } from "@/utils/NeoRegistry";
+import { ENTITY_SELECTOR_REGISTRIES, id } from "./EntitySelectorRegistries";
 
 export type SelectorArgumentInputMap = Record<string, InvertibleValue[]>;
 
@@ -260,6 +262,93 @@ export class SelectorArguments {
         }
 
         return entityQueryOptions;
+    }
+
+    public filterByHasPermission(entities: Entity[]): Entity[] {
+        if (this.hasAnyOf("haspermission")) {
+            // haspermission=が指定された時点でプレイヤーのみに絞られる
+            const permissions = this.getValueDirectly("haspermission")!;
+
+            return entities.filter(entity => {
+                if (entity instanceof Player) {
+                    for (const __name__ of Object.keys(permissions)) {
+                        const name = __name__ as keyof HasPermission;
+                        const values = permissions[name as keyof HasPermission]!;
+
+                        const isEnabled = entity.inputPermissions.isPermissionCategoryEnabled(SelectorArgumentTypes.getInputPermissionCategory(name));
+
+                        for (const { value } of values) {
+                            if (isEnabled && value === "disabled") {
+                                return false;
+                            }
+                            else if (!isEnabled && value === "enabled") {
+                                return false;
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+                else return false;
+            });
+        }
+        else return entities;
+    }
+
+    public filterByHasItem(entities: Entity[]): Entity[] {
+        if (this.hasAnyOf("hasitem")) {
+            const hasItem = this.getValueDirectly("hasitem")!;
+            const conditions: HasItem[] = Array.isArray(hasItem) ? hasItem : [hasItem];
+
+            return entities.filter(entity => {
+                return conditions.every(condition => {
+                    // なんとquantityは上書き
+                    const itemId: Identifier = IdentifierParser.readDeaultedIdentifier(
+                        "minecraft",
+                        condition.item[condition.item.length - 1]!.value
+                    );
+                    const location: string | undefined = condition.location?.[condition.location.length - 1]?.value;
+                    const slot: number | undefined = condition.slot?.[condition.slot.length - 1]?.value;
+                    const quantity: IntRange | undefined = ((arg: number | IntRange | undefined) => {
+                        if (sentry.number.test(arg)) {
+                            return IntRange.exactValue(arg);
+                        }
+                        else return arg;
+                    })(condition.quantity?.[condition.quantity.length - 1]?.value);
+                    const data: number | undefined = condition.data?.[condition.data.length - 1]?.value;
+
+                    // Q. コンポーネントを持たないエンティティはquantity=0を通るのか? -> 通る
+                    if (!entity.hasComponent(EntityComponentTypes.Inventory)) {
+                        return quantity === undefined || (quantity.getMin() === 0 && quantity.getMax() === 0);
+                    }
+
+                    function matcher(itemStack: ItemStack | undefined): boolean {
+                        if (itemStack === undefined) return false;
+                        if (!itemId.equals(Identifier.of(itemStack.type.id))) return false;
+                        if (quantity !== undefined && !quantity.within(itemStack.amount)) return false;
+                        // data
+                        return true;
+                    }
+
+                    if (location === undefined) {
+                        for (const { value } of ENTITY_SELECTOR_REGISTRIES.get("bedrock_execute_simulator:item_location_types").getEntries()) {
+                            return value.getItems(entity).some(matcher);
+                        }
+                    }
+                    else if (slot === undefined) {
+                        const itemLocationType = ENTITY_SELECTOR_REGISTRIES.get("bedrock_execute_simulator:item_location_types").get(id(location));
+                        return itemLocationType.getItems(entity).some(matcher);
+                    }
+                    else {
+                        const itemStack = ENTITY_SELECTOR_REGISTRIES.get("bedrock_execute_simulator:item_location_types").get(id(location)).getItem(entity, slot);
+                        return matcher(itemStack);
+                    }
+
+                    return true;
+                });
+            });
+        }
+        else return entities;
     }
 
     public getPositionVectorResolver(): PositionVectorResolver {

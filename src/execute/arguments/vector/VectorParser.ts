@@ -1,6 +1,6 @@
 import { sentry } from "@typesentry";
 import { DualAxisRotationBuilder, Vector3Builder } from "@utils/Vector";
-import { AbstractParser } from "../AbstractParser";
+import { AbstractParser } from "@utils/AbstractParser";
 import { AbstractVectorResolver, VectorComponent, VectorComponentType } from "./AbstractVectorResolver";
 import { PositionVectorResolver } from "./PositionVectorResolver";
 import { RotationVectorResolver } from "./RotationVectorResolver";
@@ -20,12 +20,12 @@ export abstract class VectorParser<T> extends AbstractParser<AbstractVectorResol
         return new Set(['"']);
     }
 
-    protected override getWhitespace(): Set<string> {
+    protected override getWhitespaces(): Set<string> {
         return new Set([' ']);
     }
 
-    protected override getErrorConstructor(): (message: string, cause?: Error) => VectorParseError {
-        return (message, cause) => new VectorParseError(message, cause);
+    protected override getErrorConstructor(): new (message: string, cause?: Error) => VectorParseError {
+        return VectorParseError;
     }
 
     private type(): VectorComponentType {

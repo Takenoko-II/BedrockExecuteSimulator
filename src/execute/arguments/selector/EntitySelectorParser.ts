@@ -1,7 +1,7 @@
 import { world } from "@minecraft/server";
 import { SelectorArgumentInputMap, SelectorArguments } from "./SelectorArguments";
 import { SelectorSortOrder, SelectorType } from "./SelectorType";
-import { AbstractParser } from "../AbstractParser";
+import { AbstractParser } from "@utils/AbstractParser";
 import { SelectorArgumentDuplicationRule } from "./SelectorArgumentType";
 import { IntRange } from "@utils/NumberRange";
 import { Serializer } from "@utils/Serializable";
@@ -13,11 +13,11 @@ import { VectorComponent, VectorComponentType } from "../vector/AbstractVectorRe
 export class EntitySelectorInterpretError extends Error {}
 
 export class EntitySelectorParser extends AbstractParser<EntitySelector, EntitySelectorInterpretError> {
-    protected override getErrorConstructor(): (message: string, cause?: Error) => EntitySelectorInterpretError {
-        return (message: string, cause?: Error) => new EntitySelectorInterpretError(message, cause);
+    protected override getErrorConstructor(): new (message: string, cause?: Error) => EntitySelectorInterpretError {
+        return EntitySelectorInterpretError;
     }
 
-    protected override getWhitespace(): Set<string> {
+    protected override getWhitespaces(): Set<string> {
         return new Set([' ', '\n']);
     }
 

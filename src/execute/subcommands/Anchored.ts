@@ -59,7 +59,7 @@ export class Anchored extends RedirectableSubCommand {
         return this.entityAnchor;
     }
 
-    public toString(): string {
+    public getName(): string {
         return "anchored";
     }
 }

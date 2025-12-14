@@ -5,10 +5,14 @@ import { CommandSourceStack } from "../CommandSourceStack";
 export abstract class SubCommand {
     public abstract apply(stack: CommandSourceStack): CommandSourceStack[];
 
-    public abstract toString(): string;
+    public abstract getName(): string;
 }
 
 export abstract class RedirectableSubCommand extends SubCommand {
+    protected constructor() {
+        super();
+    }
+
     public abstract redirect(stack: CommandSourceStack): void;
 
     public override apply(stack: CommandSourceStack): CommandSourceStack[] {
@@ -40,6 +44,10 @@ export abstract class ForkableSubCommand extends SubCommand {
 }
 
 export abstract class GuardableSubCommand extends SubCommand {
+    protected constructor() {
+        super();
+    }
+
     public abstract test(stack: CommandSourceStack): boolean;
 
     public override apply(stack: CommandSourceStack): CommandSourceStack[] {

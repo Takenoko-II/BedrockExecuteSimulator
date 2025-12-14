@@ -1,5 +1,5 @@
 import { BlockStates, BlockType, BlockTypes } from "@minecraft/server";
-import { AbstractParser } from "../AbstractParser";
+import { AbstractParser } from "@utils/AbstractParser";
 import { BlockPredicate } from "./BlockPredicate";
 
 export class BlockParseError extends Error {}
@@ -17,12 +17,12 @@ export class BlockPredicateParser extends AbstractParser<BlockPredicate, BlockPa
         return new Set(['"']);
     }
 
-    protected override getWhitespace(): Set<string> {
+    protected override getWhitespaces(): Set<string> {
         return new Set([' ']);
     }
 
-    protected override getErrorConstructor(): (message: string, cause?: Error) => BlockParseError {
-        return (message, cause) => new BlockParseError(message, cause);
+    protected override getErrorConstructor(): new (message: string, cause?: Error) => BlockParseError {
+        return BlockParseError;
     }
 
     private type(): BlockType {

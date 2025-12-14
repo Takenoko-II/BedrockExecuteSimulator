@@ -1,15 +1,11 @@
-import { Dimension, DimensionTypes, Entity, EntityComponentTypes, EntityQueryOptions, ItemStack, Player, world } from "@minecraft/server";
+import { Dimension, DimensionTypes, Entity, EntityQueryOptions, world } from "@minecraft/server";
 import { MinecraftEntityTypes } from "@minecraft/vanilla-data";
-import { IntRange } from "@utils/NumberRange";
 import { CommandSourceStack } from "../../CommandSourceStack";
 import { SelectorSortOrder, SelectorType } from "./SelectorType";
 import { SelectorArguments } from "./SelectorArguments";
-import { HasItem, HasPermission, SelectorArgumentTypes } from "./SelectorArgumentType";
-import { ENTITY_SELECTOR_REGISTRIES, id } from "./EntitySelectorRegistries";
+import { ENTITY_SELECTOR_REGISTRIES } from "./EntitySelectorRegistries";
 import { PositionVectorResolver } from "../vector/PositionVectorResolver";
 import { EntitySelectorInterpretError } from "./EntitySelectorParser";
-import { Identifier, IdentifierParser } from "@/utils/NeoRegistry";
-import { sentry } from "@/libs/TypeSentry";
 
 export class EntitySelector {
     public readonly isSingle: boolean;
@@ -33,83 +29,6 @@ export class EntitySelector {
         if (selectorType.traits.typeSpecific?.overridable === false && selectorArguments.hasAnyOf("type")) {
             throw new EntitySelectorInterpretError("セレクタ引数 'type' はエンティティ種の強制のないセレクタにのみ適用できます");
         }
-    }
-
-    private hasPermission(entities: Entity[]): Entity[] {
-        if (this.selectorArguments.hasAnyOf("haspermission")) {
-            // haspermission=が指定された時点でプレイヤーのみに絞られる
-            const permissions = this.selectorArguments.getValueDirectly("haspermission")!;
-
-            return entities.filter(entity => {
-                if (entity instanceof Player) {
-                    for (const __name__ of Object.keys(permissions)) {
-                        const name = __name__ as keyof HasPermission;
-                        const values = permissions[name as keyof HasPermission]!;
-
-                        const isEnabled = entity.inputPermissions.isPermissionCategoryEnabled(SelectorArgumentTypes.getInputPermissionCategory(name));
-
-                        for (const { value } of values) {
-                            if (isEnabled && value === "disabled") {
-                                return false;
-                            }
-                            else if (!isEnabled && value === "enabled") {
-                                return false;
-                            }
-                        }
-                    }
-
-                    return true;
-                }
-                else return false;
-            });
-        }
-        else return entities;
-    }
-
-    private hasItem(entities: Entity[]): Entity[] {
-        if (this.selectorArguments.hasAnyOf("hasitem")) {
-            const hasItem = this.selectorArguments.getValueDirectly("hasitem")!;
-            const conditions: HasItem[] = Array.isArray(hasItem) ? hasItem : [hasItem];
-
-            return entities.filter(entity => {
-                return conditions.every(condition => {
-                    // なんとquantityは上書き
-                    const itemId: Identifier = IdentifierParser.readDeaultedIdentifier(
-                        "minecraft",
-                        condition.item[condition.item.length - 1]!.value
-                    );
-                    const location: string | undefined = condition.location?.[condition.location.length - 1]?.value;
-                    const slot: number | undefined = condition.slot?.[condition.slot.length - 1]?.value;
-                    const quantity: IntRange | undefined = ((arg: number | IntRange | undefined) => {
-                        if (sentry.number.test(arg)) {
-                            return IntRange.exactValue(arg);
-                        }
-                        else return arg;
-                    })(condition.quantity?.[condition.quantity.length - 1]?.value);
-                    const data: number | undefined = condition.data?.[condition.data.length - 1]?.value;
-
-                    // Q. コンポーネントを持たないエンティティはquantity=0を通るのか? -> 通る
-                    if (!entity.hasComponent(EntityComponentTypes.Inventory)) {
-                        return quantity === undefined || (quantity.getMin() === 0 && quantity.getMax() === 0);
-                    }
-
-                    const container = entity.getComponent(EntityComponentTypes.Inventory)!.container;
-
-                    for (let i = 0; i < container.size; i++) {
-                        const slot = container.getSlot(i);
-                        if (!slot.isValid || !slot.hasItem()) continue;
-                        const itemStack = slot.getItem()!;
-
-                        if (!itemId.equals(Identifier.of(itemStack.typeId))) continue;
-                        if (quantity && !quantity.within(itemStack.amount)) continue;
-                        // location, slot, data
-                    }
-
-                    return true;
-                });
-            });
-        }
-        else return entities;
     }
 
     public getEntities(stack: CommandSourceStack): Entity[] {
@@ -148,8 +67,8 @@ export class EntitySelector {
             }
         }
 
-        entities = this.hasPermission(entities);
-        entities = this.hasItem(entities);
+        entities = this.selectorArguments.filterByHasPermission(entities);
+        entities = this.selectorArguments.filterByHasItem(entities);
 
         switch (this.selectorType.sortOrder) {
             case SelectorSortOrder.NEAREST: {

@@ -20,7 +20,7 @@ export class Positioned extends RedirectableSubCommand {
         return this.posVecResolver;
     }
 
-    public toString(): string {
+    public getName(): string {
         return "positioned";
     }
 }
@@ -34,7 +34,7 @@ export class PositionedAs extends ForkableSubCommand {
         stack.setPosition(entity);
     }
 
-    public toString(): string {
+    public getName(): string {
         return "positioned as";
     }
 }

@@ -1,4 +1,4 @@
-import { AbstractParser } from "../AbstractParser";
+import { AbstractParser } from "@utils/AbstractParser";
 import { AxisSet } from "./AxisSet";
 
 export class AxisSetParseError extends Error {}
@@ -16,12 +16,12 @@ export class AxisSetParser extends AbstractParser<AxisSet, AxisSetParseError> {
         return new Set(['"', '\'']);
     }
 
-    protected override getWhitespace(): Set<string> {
+    protected override getWhitespaces(): Set<string> {
         return new Set([' ']);
     }
 
-    protected override getErrorConstructor(): (message: string, cause?: Error) => AxisSetParseError {
-        return (message, cause) => new AxisSetParseError(message, cause);
+    protected override getErrorConstructor(): new (message: string, cause?: Error) => AxisSetParseError {
+        return AxisSetParseError;
     }
 
     private axis(): string {

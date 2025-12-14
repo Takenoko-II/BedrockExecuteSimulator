@@ -12,7 +12,7 @@ export class As extends ForkableSubCommand {
         stack.setExecutor(entity);
     }
 
-    public toString(): string {
+    public getName(): string {
         return "as";
     }
 }

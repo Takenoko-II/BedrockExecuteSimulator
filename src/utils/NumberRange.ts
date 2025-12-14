@@ -143,11 +143,16 @@ export class IntRange extends FiniteRange {
         else return Math.round(value);
     }
 
+    public isOpen(): boolean {
+        return this.min === Number.MIN_SAFE_INTEGER || this.max === Number.MAX_SAFE_INTEGER;
+    }
+
     public toBigInt(): BigIntRange {
         return BigIntRange.minMax(BigInt(this.getMin()), BigInt(this.getMax()));
     }
 
     public ints(): Set<number> {
+        if (this.isOpen()) throw new Error("範囲が閉じていないため、 IntRange は整数を全列挙できません");
         return new Set(Array(this.max - this.min).fill(undefined).map((_, i) => i + this.min));
     }
 
@@ -222,10 +227,6 @@ export class BigIntRange implements IRange<bigint> {
 
     public toPrecisionLost(): IntRange {
         return IntRange.minMax(Number(this.getMin()), Number(this.getMax()));
-    }
-
-    public ints(): Set<bigint> {
-        return new Set(Array(Number(this.max) - Number(this.min)).fill(undefined).map((_, i) => BigInt(i) + this.min));
     }
 
     public static exactValue(value: bigint): BigIntRange {

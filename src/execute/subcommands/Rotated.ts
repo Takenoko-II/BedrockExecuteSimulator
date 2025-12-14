@@ -20,7 +20,7 @@ export class Rotated extends RedirectableSubCommand {
         return this.rotVecResolver;
     }
 
-    public toString(): string {
+    public getName(): string {
         return "rotated";
     }
 }
@@ -34,7 +34,7 @@ export class RotatedAs extends ForkableSubCommand {
         stack.setRotation(entity);
     }
 
-    public toString(): string {
+    public getName(): string {
         return "rotated as";
     }
 }

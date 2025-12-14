@@ -14,7 +14,7 @@ export class At extends ForkableSubCommand {
         stack.setRotation(entity.getRotation());
     }
 
-    public toString(): string {
+    public getName(): string {
         return "at";
     }
 }

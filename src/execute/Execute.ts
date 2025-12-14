@@ -66,52 +66,48 @@ export class Execute {
         this.root = root;
     }
 
-    public as(selector: string): Execute {
-        this.subCommands.push(new As(EntitySelectorParser.readSelector(selector)));
+    public chainSubCommand(subCommand: SubCommand): Execute {
+        this.subCommands.push(subCommand);
         return this;
     }
 
+    public as(selector: string): Execute {
+        return this.chainSubCommand(new As(EntitySelectorParser.readSelector(selector)));
+    }
+
     public at(selector: string): Execute {
-        this.subCommands.push(new At(EntitySelectorParser.readSelector(selector)));
-        return this;
+        return this.chainSubCommand(new At(EntitySelectorParser.readSelector(selector)));
     }
 
     public readonly positioned: IPositioned = {
         $: (position) => {
-            this.subCommands.push(new Positioned(VectorParser.readPositionVector(position)));
-            return this;
+            return this.chainSubCommand(new Positioned(VectorParser.readPositionVector(position)));
         },
         as: (selector) => {
-            this.subCommands.push(new PositionedAs(EntitySelectorParser.readSelector(selector)));
-            return this;
+            return this.chainSubCommand(new PositionedAs(EntitySelectorParser.readSelector(selector)));
         }
     }
 
     public readonly rotated: IRotated = {
         $: (rotation) => {
-            this.subCommands.push(new Rotated(VectorParser.readRotationVector(rotation)));
-            return this;
+            return this.chainSubCommand(new Rotated(VectorParser.readRotationVector(rotation)));
         },
         as: (selector) => {
-            this.subCommands.push(new RotatedAs(EntitySelectorParser.readSelector(selector)));
-            return this;
+            return this.chainSubCommand(new RotatedAs(EntitySelectorParser.readSelector(selector)));
         }
     }
 
     public readonly facing: IFacing = {
         $: (position) => {
-            this.subCommands.push(new Facing(VectorParser.readPositionVector(position)));
-            return this;
+            return this.chainSubCommand(new Facing(VectorParser.readPositionVector(position)));
         },
         entity: (selector, anchor) => {
-            this.subCommands.push(new FacingEntity(EntitySelectorParser.readSelector(selector), anchor));
-            return this;
+            return this.chainSubCommand(new FacingEntity(EntitySelectorParser.readSelector(selector), anchor));
         }
     }
 
     public align(axisSet: string): Execute {
-        this.subCommands.push(new Align(AxisSetParser.readAxisSet(axisSet)));
-        return this;
+        return this.chainSubCommand(new Align(AxisSetParser.readAxisSet(axisSet)));
     }
 
     public in(dimensionId: string): Execute {
@@ -121,49 +117,42 @@ export class Execute {
             throw new TypeError(`ディメンションID '${dimensionId}' は無効です`);
         }
 
-        this.subCommands.push(new In(world.getDimension(dimensionId.toLowerCase())));
-        return this;
+        return this.chainSubCommand(new In(world.getDimension(dimensionType.typeId)));
     }
 
     public anchored(anchor: EntityAnchorType): Execute {
-        this.subCommands.push(new Anchored(anchor));
+        this.chainSubCommand(new Anchored(anchor));
         return this;
     }
 
     public readonly if: IGuardSubCommand = {
         entity: (selector) => {
-            this.subCommands.push(new IfEntity(EntitySelectorParser.readSelector(selector)));
-            return this;
+            return this.chainSubCommand(new IfEntity(EntitySelectorParser.readSelector(selector)));
         },
         block: (position, blockPredicate) => {
-            this.subCommands.push(new IfBlock(
+            return this.chainSubCommand(new IfBlock(
                 VectorParser.readPositionVector(position),
                 BlockPredicateParser.readBlockPredicate(blockPredicate)
             ));
-            return this;
         },
         blocks: (begin, end, destination, scanMode) => {
-            this.subCommands.push(new IfBlocks(
+            return this.chainSubCommand(new IfBlocks(
                 VectorParser.readPositionVector(begin),
                 VectorParser.readPositionVector(end),
                 VectorParser.readPositionVector(destination),
                 scanMode
             ));
-            return this;
         },
         score: (scoreHolder, objective) => {
             const accessA = new ScoreAccess(ScoreAccess.readScoreHolder(scoreHolder), objective);
-            const that = this;
 
             return {
                 $: (comparator, scoreHolderOther, objectiveOther) => {
                     const accessB = new ScoreAccess(ScoreAccess.readScoreHolder(scoreHolderOther), objectiveOther);
-                    this.subCommands.push(new IfScoreCompare(accessA, comparator, accessB));
-                    return that;
+                    return this.chainSubCommand(new IfScoreCompare(accessA, comparator, accessB));
                 },
                 matches: (range) => {
-                    this.subCommands.push(new IfScoreMatches(accessA, range));
-                    return that;
+                    return this.chainSubCommand(new IfScoreMatches(accessA, range));
                 }
             };
         }
@@ -171,24 +160,21 @@ export class Execute {
 
     public readonly unless: IGuardSubCommand = {
         entity: (selector) => {
-            this.subCommands.push(new UnlessEntity(EntitySelectorParser.readSelector(selector)));
-            return this;
+            return this.chainSubCommand(new UnlessEntity(EntitySelectorParser.readSelector(selector)));
         },
         block: (position, blockPredicate) => {
-            this.subCommands.push(new UnlessBlock(
+            return this.chainSubCommand(new UnlessBlock(
                 VectorParser.readPositionVector(position),
                 BlockPredicateParser.readBlockPredicate(blockPredicate)
             ));
-            return this;
         },
         blocks: (begin, end, destination, scanMode) => {
-            this.subCommands.push(new UnlessBlocks(
+            return this.chainSubCommand(new UnlessBlocks(
                 VectorParser.readPositionVector(begin),
                 VectorParser.readPositionVector(end),
                 VectorParser.readPositionVector(destination),
                 scanMode
             ));
-            return this;
         },
         score: (scoreHolder, objective) => {
             const accessA = new ScoreAccess(ScoreAccess.readScoreHolder(scoreHolder), objective);
@@ -197,12 +183,10 @@ export class Execute {
             return {
                 $: (comparator, scoreHolderOther, objectiveOther) => {
                     const accessB = new ScoreAccess(ScoreAccess.readScoreHolder(scoreHolderOther), objectiveOther);
-                    this.subCommands.push(new UnlessScoreCompare(accessA, comparator, accessB));
-                    return that;
+                    return this.chainSubCommand(new UnlessScoreCompare(accessA, comparator, accessB));
                 },
                 matches: (range) => {
-                    this.subCommands.push(new UnlessScoreMatches(accessA, range));
-                    return that;
+                    return this.chainSubCommand(new UnlessScoreMatches(accessA, range));
                 }
             };
         }

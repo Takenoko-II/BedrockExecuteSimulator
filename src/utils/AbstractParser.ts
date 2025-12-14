@@ -15,7 +15,7 @@ export abstract class AbstractParser<T, E extends Error> {
     }
 
     protected isOnlyWhitespaceRemaining(): boolean {
-        return this.isOver() || [...this.text.slice(this.cursor)].every(s => this.getWhitespace().has(s));
+        return this.isOver() || [...this.text.slice(this.cursor)].every(s => this.getWhitespaces().has(s));
     }
 
     private peekChar(): string {
@@ -49,7 +49,7 @@ export abstract class AbstractParser<T, E extends Error> {
 
     protected abstract getErrorConstructor(): new (message: string, cause?: Error) => E;
 
-    protected abstract getWhitespace(): Set<string>;
+    protected abstract getWhitespaces(): Set<string>;
 
     protected abstract getQuotes(): Set<string>;
 
@@ -63,15 +63,19 @@ export abstract class AbstractParser<T, E extends Error> {
         ]);
     }
 
-    protected abstract getTrue(): string;
+    protected getTrue(): string {
+        return "true";
+    }
 
-    protected abstract getFalse(): string;
+    protected getFalse(): string {
+        return "false";
+    }
 
     protected ignore(): void {
         if (this.isOver()) return;
 
         let current: string = this.peekChar();
-        while (this.getWhitespace().has(current)) {
+        while (this.getWhitespaces().has(current)) {
             this.nextChar();
             if (this.isOver()) {
                 break;
@@ -115,7 +119,7 @@ export abstract class AbstractParser<T, E extends Error> {
         }
     }
 
-    protected expect(ignore: boolean, ...candidates: string[]):string {
+    protected expect(ignore: boolean, ...candidates: string[]): string {
         const s: string | undefined = this.next(ignore, ...candidates);
 
         if (s === undefined) {
@@ -123,6 +127,11 @@ export abstract class AbstractParser<T, E extends Error> {
         }
 
         return s;
+    }
+
+    protected expectWhitespace(): void {
+        this.expect(false, ...this.getWhitespaces());
+        this.ignore();
     }
 
     protected number(ignore: boolean): { readonly value: number; readonly isWrittenAsInt: boolean } {
@@ -248,7 +257,7 @@ export abstract class AbstractParser<T, E extends Error> {
         else {
             const SYMBOLS: Set<string> = this.getInvalidSymbolsInUnquotedString();
 
-            while (!this.getWhitespace().has(current) && !stoppers.includes(current)) {
+            while (!this.getWhitespaces().has(current) && !stoppers.includes(current)) {
                 if (SYMBOLS.has(current)) {
                     throw this.exception("クオーテーションで囲まれていない文字列において利用できない文字( "+ current +" )を検出しました");
                 }

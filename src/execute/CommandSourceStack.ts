@@ -35,7 +35,7 @@ export class CommandSourceStack {
         return this.executor;
     }
 
-    public getUndefinedableExecutor(): Entity | undefined {
+    public getExecutorOrUndefined(): Entity | undefined {
         return this.executor;
     }
 
@@ -57,7 +57,7 @@ export class CommandSourceStack {
         return this.dimension;
     }
 
-    public getLocation(): DimensionLocation {
+    public getDimensionLocation(): DimensionLocation {
         return this.getPosition().toDimensionLocation(this.getDimension());
     }
 
