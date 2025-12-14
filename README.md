@@ -38,6 +38,8 @@ execute.as("@e[type=armor_stand,scores={a=0}]").at("@e[type=armor_stand,scores={
 ### 3. 実行文脈のイテレータの取得
 実行文脈の遷移をじっくり確認できる
 
+<br>** `ForkIterator` が返す順序が真逆！！！！！！！！！！ **
+
 ```ts
 import { world } from "@minecraft/server";
 import { Execute } from "./execute/Execute";
